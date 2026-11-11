@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Health Manager | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="dashboard-page">
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> PATIENT PORTAL</small></span>
+        </a>
+
+        <p class="nav-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">
+                <span class="nav-icon">⌂</span> Dashboard
+            </a>
+
+            <a class="nav-link active" href="{{ url_for('health_manager') }}">
+                <span class="nav-icon">♥</span> Health Manager
+            </a>
+
+            <a class="nav-link" href="{{ url_for('verify_document') }}">
+                <span class="nav-icon">✓</span> Verify a Document
+            </a>
+
+            <a class="nav-link" href="{{ url_for('my_analyses') }}">
+                <span class="nav-icon">◷</span> Analysis History
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <p class="nav-heading">YOUR ACCOUNT</p>
+
+            <div class="sidebar-help">
+                <div class="help-icon">i</div>
+                <strong>Your privacy matters</strong>
+                <p>Your health information should only be accessible to authorized users.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="logout-button" type="submit">
+                    Sign out
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+
+        <header class="topbar">
+            <div>
+                <span class="topbar-label">PERSONAL HEALTH MANAGEMENT</span>
+                <p class="topbar-title">Health Manager</p>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+
+            <!-- WELCOME SECTION -->
+            <section class="welcome-banner">
+
+                <div class="welcome-copy">
+
+                    <span class="welcome-tag">YOUR PERSONAL HEALTH SPACE</span>
+
+                    <h1>Personal Health Manager</h1>
+
+                    <p>
+                        Track your health measurements, understand your
+                        trends and maintain your health history.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- DOWNLOAD HEALTH HISTORY -->
+            <section class="section-block">
+                <div class="feature-card"
+                    style="display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            flex-wrap: wrap;
+                            gap: 20px;">
+
+                    <div>
+                        <span class="feature-label">YOUR HEALTH RECORDS</span>
+                        <h3>Complete Health History</h3>
+                        <p>
+                            Download your health measurements, summaries
+                            and trend graphs in one PDF report.
+                        </p>
+                    </div>
+
+                    <a href="{{ url_for('download_health_history_pdf') }}"
+                    class="primary-button"
+                    style="text-decoration: none;">
+                        ↓ Download Health History PDF
+                    </a>
+
+                </div>
+            </section>
+
+
+
+
+            <!-- HEALTH CATEGORIES -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Health Categories</h2>
+                        <p>Select a category to manage your health records.</p>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+
+                    <!-- BLOOD SUGAR -->
+                    <a href="{{ url_for('blood_sugar') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-teal">◉</div>
+
+                        <span class="feature-label">GLUCOSE TRACKING</span>
+
+                        <h3>Blood Sugar</h3>
+
+                        <p>
+                            Record fasting, post-meal, random glucose
+                            and HbA1c measurements.
+                        </p>
+
+                    </a>
+
+                    <!-- BLOOD PRESSURE -->
+                    <a href="{{ url_for('blood_pressure') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-blue">♥</div>
+
+                        <span class="feature-label">CARDIOVASCULAR</span>
+
+                        <h3>Blood Pressure</h3>
+
+                        <p>
+                            Maintain systolic and diastolic blood
+                            pressure records.
+                        </p>
+
+                    </a>
+
+                    <!-- HEART RATE -->
+                    <a href="{{ url_for('heart_rate') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-purple">♡</div>
+
+                        <span class="feature-label">HEART HEALTH</span>
+
+                        <h3>Heart Rate</h3>
+
+                        <p>
+                            Track your heart rate measurements
+                            over time.
+                        </p>
+
+                    </a>
+
+                    <!-- WEIGHT -->
+                    <a href="{{ url_for('weight_tracking') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-amber">⚖</div>
+
+                        <span class="feature-label">BODY MEASUREMENTS</span>
+
+                        <h3>Weight</h3>
+
+                        <p>
+                            Record your weight and monitor
+                            changes over time.
+                        </p>
+
+                    </a>
+
+                    <!-- SLEEP -->
+                    <a href="{{ url_for('sleep_tracking') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-blue">◷</div>
+
+                        <span class="feature-label">DAILY WELLNESS</span>
+
+                        <h3>Sleep Tracking</h3>
+
+                        <p>
+                            Record sleep sessions and automatically
+                            calculate sleep duration and efficiency.
+                        </p>
+
+                    </a>
+
+                    <!-- TEMPERATURE -->
+                    <a href="{{ url_for('temperature_tracking') }}"
+                       class="feature-card"
+                       style="text-decoration: none; color: inherit;">
+
+                        <div class="feature-icon icon-teal">🌡</div>
+
+                        <span class="feature-label">BODY TEMPERATURE</span>
+
+                        <h3>Temperature Tracking</h3>
+
+                        <p>
+                            Record body temperature in Celsius
+                            and monitor changes over time.
+                        </p>
+
+                    </a>
+
+                    <!-- OTHER MEASUREMENTS - FUTURE FEATURE -->
+                    <article class="feature-card">
+
+                        <div class="feature-icon icon-teal">＋</div>
+
+                        <span class="feature-label">ADDITIONAL TRACKING</span>
+
+                        <h3>Other Measurements</h3>
+
+                        <p>
+                            Track oxygen saturation and other
+                            health measurements.
+                        </p>
+
+                        <span class="feature-coming">Coming soon</span>
+
+                    </article>
+
+                </div>
+
+            </section>
+
+            <!-- FOOTER -->
+            <footer class="dashboard-footer">
+
+                <span>© 2026 MediTrust · Development version</span>
+
+                <span>
+                    Health insights are informational,
+                    not medical diagnoses.
+                </span>
+
+            </footer>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Sugar | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="dashboard-page">
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> PATIENT PORTAL</small></span>
+        </a>
+
+        <p class="nav-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">⌂ Dashboard</a>
+
+            <a class="nav-link" href="{{ url_for('health_manager') }}">♥ Health Manager</a>
+
+            <a class="nav-link active" href="{{ url_for('blood_sugar') }}">◉ Blood Sugar</a>
+
+            <a class="nav-link" href="{{ url_for('verify_document') }}">✓ Verify a Document</a>
+
+            <a class="nav-link" href="{{ url_for('my_analyses') }}">◷ Analysis History</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <p class="nav-heading">YOUR ACCOUNT</p>
+
+            <div class="sidebar-help">
+                <div class="help-icon">i</div>
+                <strong>Your privacy matters</strong>
+                <p>Your health information should only be accessible to authorized users.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="logout-button" type="submit">
+                    Sign out
+                </button>
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+
+        <header class="topbar">
+            <div>
+                <span class="topbar-label">PERSONAL HEALTH MANAGEMENT</span>
+                <p class="topbar-title">Blood Sugar Tracking</p>
+            </div>
+        </header>
+
+
+        <div class="dashboard-content">
+
+            <!-- WELCOME SECTION -->
+            <section class="welcome-banner">
+                <div class="welcome-copy">
+                    <span class="welcome-tag">GLUCOSE TRACKING</span>
+
+                    <h1>Blood Sugar</h1>
+
+                    <p>
+                        Maintain your glucose records and understand how
+                        your measurements change over time.
+                    </p>
+                </div>
+            </section>
+
+
+            <!-- ADD MEASUREMENT FORM -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Add Blood Sugar Reading</h2>
+                        <p>Enter your measurement details below.</p>
+                    </div>
+                </div>
+
+
+                <!-- FLASH MESSAGES -->
+                {% for message in get_flashed_messages() %}
+                    <p style="color: #087e75; font-weight: bold;">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+
+
+                <form method="POST" class="feature-card">
+
+                    <label for="measurement_type">Measurement Type</label>
+
+                    <select id="measurement_type" name="measurement_type" required>
+                        <option value="">Select measurement</option>
+                        <option value="fasting">Fasting Blood Sugar</option>
+                        <option value="post_meal">Post-Meal Blood Sugar</option>
+                        <option value="random">Random Blood Sugar</option>
+                        <option value="hba1c">HbA1c</option>
+                    </select>
+
+                    <br><br>
+
+
+                    <label for="value">Measurement Value</label>
+
+                    <input
+                        type="number"
+                        id="value"
+                        name="value"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        placeholder="Enter your reading"
+                    >
+
+                    <br><br>
+
+
+                    <label for="recorded_at">Date and Time of Measurement</label>
+
+                    <input
+                        type="datetime-local"
+                        id="recorded_at"
+                        name="recorded_at"
+                        max="{{ max_datetime }}"
+                        required
+                    >
+
+                    <br><br>
+
+
+                    <label for="context">Additional Notes (Optional)</label>
+
+                    <input
+                        type="text"
+                        id="context"
+                        name="context"
+                        maxlength="50"
+                        placeholder="Example: 2 hours after lunch"
+                    >
+
+                    <br><br>
+
+
+                    <button type="submit" class="button button-primary">
+                        Save Measurement
+                    </button>
+
+                </form>
+
+            </section>
+
+
+
+            <!-- BLOOD SUGAR REFERENCE GUIDE -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Blood Sugar Reference Guide</h2>
+                        <p>Common diagnostic reference ranges for non-pregnant adults.</p>
+                    </div>
+                </div>
+
+                <div class="health-table-wrap">
+                    <table class="health-table">
+                        <thead>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Normal</th>
+                                <th>Prediabetes</th>
+                                <th>Diabetes threshold</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr>
+                                <td>Fasting Blood Sugar</td>
+                                <td>70–99 mg/dL</td>
+                                <td>100–125 mg/dL</td>
+                                <td>≥126 mg/dL</td>
+                            </tr>
+
+                            <tr>
+                                <td>2-hour OGTT</td>
+                                <td>Below 140 mg/dL</td>
+                                <td>140–199 mg/dL</td>
+                                <td>≥200 mg/dL</td>
+                            </tr>
+
+                            <tr>
+                                <td>HbA1c</td>
+                                <td>Below 5.7%</td>
+                                <td>5.7–6.4%</td>
+                                <td>≥6.5%</td>
+                            </tr>
+
+                            <tr>
+                                <td>Random Blood Sugar</td>
+                                <td>No single cutoff</td>
+                                <td>Not defined</td>
+                                <td>≥200 mg/dL with classic symptoms</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="feature-card" style="margin-top: 18px;">
+                    <h3>Important things to remember</h3>
+
+                    <p>
+                        • Below 70 mg/dL is generally considered low blood sugar.
+                    </p>
+
+                    <p>
+                        • A normal fasting result does not guarantee that
+                        HbA1c or other glucose tests are normal.
+                    </p>
+
+                    <p>
+                        • A single abnormal result does not automatically
+                        establish a diabetes diagnosis. Clinical confirmation
+                        may be required.
+                    </p>
+
+                    <p>
+                        • Random and ordinary post-meal readings require
+                        interpretation based on timing, symptoms and context.
+                    </p>
+
+                    <p>
+                        • Pregnancy and individual medical circumstances
+                        may require different reference ranges.
+                    </p>
+
+                    <p style="color: #64748b; font-size: 13px;">
+                        This guide is for educational purposes only.
+                        It does not determine whether a person is safe,
+                        diagnose diabetes or replace medical advice.
+                    </p>
+                </div>
+
+            </section>
+
+
+            <!-- BLOOD SUGAR SUMMARY CARDS -->
+            {% set fasting = latest_by_type.get('blood_sugar_fasting') %}
+            {% set post_meal = latest_by_type.get('blood_sugar_post_meal') %}
+            {% set random = latest_by_type.get('blood_sugar_random') %}
+            {% set hba1c = latest_by_type.get('blood_sugar_hba1c') %}
+
+            <div class="health-summary-grid">
+
+                <div class="health-summary-card">
+                    <span class="summary-label">FASTING BLOOD SUGAR</span>
+
+                    {% if fasting %}
+                        <strong class="summary-value">
+                            {{ fasting.value }} <small>{{ fasting.unit }}</small>
+                        </strong>
+
+                        <span class="summary-date">
+                            Latest: {{ fasting.recorded_at }}
+                        </span>
+
+                        {% set previous = previous_by_type.get('blood_sugar_fasting') %}
+
+                        {% if previous %}
+                            <div class="previous-reading">
+                                Previous: {{ previous.value }} {{ previous.unit }}
+                            </div>
+
+                            {% set difference = fasting.value - previous.value %}
+
+                            <div class="reading-comparison">
+                                {% if difference > 0 %}
+                                    Increased by {{ "%.2f"|format(difference) }}
+                                {% elif difference < 0 %}
+                                    Decreased by {{ "%.2f"|format(difference|abs) }}
+                                {% else %}
+                                    No change
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="previous-reading">
+                                No previous reading available
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <strong class="summary-empty">No reading yet</strong>
+                    {% endif %}
+                </div>
+
+                <div class="health-summary-card">
+                    <span class="summary-label">POST-MEAL BLOOD SUGAR</span>
+                    {% if post_meal %}
+                        <strong class="summary-value">{{ post_meal.value }} <small>{{ post_meal.unit }}</small></strong>
+                        <span class="summary-date">{{ post_meal.recorded_at }}</span>
+                    {% else %}
+                        <strong class="summary-empty">No reading yet</strong>
+                    {% endif %}
+                </div>
+
+                <div class="health-summary-card">
+                    <span class="summary-label">RANDOM BLOOD SUGAR</span>
+                    {% if random %}
+                        <strong class="summary-value">{{ random.value }} <small>{{ random.unit }}</small></strong>
+                        <span class="summary-date">{{ random.recorded_at }}</span>
+                    {% else %}
+                        <strong class="summary-empty">No reading yet</strong>
+                    {% endif %}
+                </div>
+
+                <div class="health-summary-card">
+                    <span class="summary-label">HbA1c</span>
+                    {% if hba1c %}
+                        <strong class="summary-value">{{ hba1c.value }} <small>{{ hba1c.unit }}</small></strong>
+                        <span class="summary-date">{{ hba1c.recorded_at }}</span>
+                    {% else %}
+                        <strong class="summary-empty">No reading yet</strong>
+                    {% endif %}
+                </div>
+
+            </div>
+
+
+
+            <!-- BLOOD SUGAR HISTORY -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Blood Sugar History</h2>
+                        <p>Your previously recorded measurements.</p>
+                    </div>
+                </div>
+
+
+                {% if measurements %}
+
+                    <div class="health-table-wrap">
+                        <table class="health-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Result</th>
+                                    <th>Recorded At</th>
+                                    <th>Notes</th>
+                                    <th>Uploaded At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for record in measurements %}
+                                <tr>
+                                    <td>
+                                        <span class="measurement-name">
+                                            {{ measurement_types.get(
+                                                record.measurement_type.replace('blood_sugar_', ''),
+                                                record.measurement_type
+                                            ) }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <strong class="measurement-value">
+                                            {{ record.value }} {{ record.unit }}
+                                        </strong>
+                                    </td>
+
+                                    <td>{{ record.recorded_at }}</td>
+                                    <td>{{ record.context or '—' }}</td>
+                                    <td>{{ record.uploaded_at }}</td>
+                                    
+                                    <td>
+                                        <form method="POST"
+                                            action="{{ url_for('delete_blood_sugar', measurement_id=record.measurement_id) }}"
+                                            onsubmit="return confirm('Are you sure you want to delete this measurement?');">
+
+                                            <button type="submit" class="delete-record-btn">
+                                                Delete
+                                            </button>
+
+                                        </form>
+                                    </td>
+
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+
+
+
+                {% else %}
+
+                    <div class="feature-card">
+                        <h3>No measurements yet</h3>
+                        <p>Your saved blood sugar readings will appear here.</p>
+                    </div>
+
+                {% endif %}
+
+            </section>
+
+
+
+            <!-- FOOTER -->
+            <footer class="dashboard-footer">
+
+                <span>© 2026 MediTrust · Development version</span>
+
+                <span>Measurements are records, not a medical diagnosis.</span>
+
+            </footer>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

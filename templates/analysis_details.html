@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Details | MediTrust</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243247;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            overflow-wrap: anywhere;
+        }
+
+        h1, h2 { margin-top: 0; }
+
+        .muted { color: #64748b; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+        }
+
+        .label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .value { font-weight: bold; }
+
+        .button {
+            display: inline-block;
+            background: #2457d6;
+            color: white;
+            padding: 11px 16px;
+            text-decoration: none;
+            border-radius: 7px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .finding {
+            background: #f4f7fb;
+            padding: 12px;
+            border-radius: 7px;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .notice {
+            background: #fff7e6;
+            padding: 14px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+
+        .risk-badge {
+            display: inline-block;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .risk-low {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .risk-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .risk-high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .risk-unknown {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .score-bar {
+            height: 9px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .score-low {
+            background: #16a34a;
+        }
+
+        .score-medium {
+            background: #d97706;
+        }
+
+        .score-high {
+            background: #dc2626;
+        }
+
+        .summary-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 9px;
+            min-width: 0;
+        }
+
+        .finding {
+            border-left: 4px solid #d97706;
+        }
+
+
+        .finding-heading {
+            font-weight: bold;
+            color: #243247;
+            line-height: 1.5;
+        }
+
+        .finding-points {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 9px;
+            border-radius: 6px;
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+<main class="container">
+
+    <section class="card">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="notice" role="status">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+
+        <h1>Analysis Details</h1>
+        <p class="muted">
+            Review the saved screening result for this document.
+        </p>
+
+        <a class="button" href="{{ url_for('my_analyses') }}">
+            Back to Analysis History
+        </a>
+
+
+        </section>
+
+        <section class="card">
+            <h2>Request Hospital Review</h2>
+
+            <p class="muted">
+                Select a demo hospital to request access to this specific document.
+                The hospital can approve or reject your request. Access to the
+                original PDF is permitted only while an approved request remains
+                valid and has not expired.
+            </p>
+
+
+            <form method="post" action="{{ url_for('request_hospital_access') }}">
+                <input type="hidden"
+                    name="analysis_id"
+                    value="{{ analysis.analysis_id }}">
+
+                <label for="hospital_id">Select Hospital</label>
+                <select id="hospital_id" name="hospital_id" required>
+                    <option value="">Choose a demo hospital</option>
+                    {% for hospital in demo_hospitals %}
+                        <option value="{{ hospital.hospital_id }}">
+                            {{ hospital.hospital_name }} — {{ hospital.city }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button class="button" type="submit">
+                    Submit Access Request
+                </button>
+            </form>
+        </section>
+
+        <section class="card">
+
+
+        <a class="button" href="{{ url_for('dashboard') }}">
+            Dashboard
+        </a>
+    </section>
+
+    <section class="card">
+        <h2>Analysis Summary</h2>
+
+        <div class="grid">
+            <div>
+                <div class="label">Analysis ID</div>
+                <div class="value">{{ analysis.analysis_id }}</div>
+            </div>
+
+            <div>
+                <div class="label">MediTrust Reference</div>
+                <div class="value">
+                    {{ analysis.internal_reference or "Not available" }}
+                </div>
+            </div>
+
+            <div>
+                <div class="label">Date Submitted</div>
+                <div class="value">
+                    {{ analysis.created_at.strftime('%d-%m-%Y %H:%M')
+                       if analysis.created_at else "Not available" }}
+                </div>
+            </div>
+
+
+            {% set score = analysis.risk_score|int %}
+            {% set risk = (analysis.risk_level or '')|lower|trim %}
+
+            <div class="summary-item">
+                <div class="label">Risk Score</div>
+                <div class="value">{{ score }}/100</div>
+
+                <div class="score-bar">
+                    <div class="score-fill
+                        {% if risk == 'low' %}score-low
+                        {% elif risk == 'medium' %}score-medium
+                        {% elif risk == 'high' %}score-high
+                        {% else %}score-unknown{% endif %}"
+                        data-score="{{ [[score, 0]|max, 100]|min }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-item">
+                <div class="label">Risk Level</div>
+
+                <div class="value">
+                    <span class="risk-badge
+                        {% if risk == 'low' %}risk-low
+                        {% elif risk == 'medium' %}risk-medium
+                        {% elif risk == 'high' %}risk-high
+                        {% else %}risk-unknown{% endif %}">
+                        {{ analysis.risk_level or "Not assessed" }}
+                    </span>
+                </div>
+            </div>
+
+
+
+
+
+
+            <div>
+                <div class="label">Review Status</div>
+                <div class="value">{{ analysis.review_status }}</div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <section class="card">
+        <h2>Extracted Medical Information</h2>
+
+        {% set extracted = analysis.extracted_data %}
+
+        {% if extracted is mapping %}
+
+            <h3>Patient and Report Details</h3>
+
+            <div class="grid">
+                {% for key in [
+                    'patient_name',
+                    'patient_id',
+                    'hospital_name',
+                    'doctor_name',
+                    'test_name',
+                    'report_number',
+                    'report_date'
+                ] %}
+                    <div class="summary-item">
+                        <div class="label">
+                            {{ key.replace('_', ' ') | title }}
+                        </div>
+
+                        <div class="value">
+                            {% set value = extracted.get(key) %}
+
+                            {% if value is none or value == '' %}
+                                Not available
+                            {% else %}
+                                {{ value }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <h3 style="margin-top: 24px;">Test Results</h3>
+
+            {% set results = extracted.get('test_result') %}
+
+            {% if results is mapping %}
+                <div class="grid">
+                    {% for key, value in results.items() %}
+                        <div class="summary-item">
+                            <div class="label">{{ key }}</div>
+                            <div class="value">
+                                {% if value is none or value == '' %}
+                                    Not available
+                                {% else %}
+                                    {{ value }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% elif results is string %}
+                <pre>{{ results }}</pre>
+            {% else %}
+                <p class="muted">No structured test results are available.</p>
+            {% endif %}
+
+            {% set missing = extracted.get('missing_fields', []) %}
+
+            {% if missing %}
+                <div class="notice" style="margin-top: 20px;">
+                    <strong>Missing information</strong>
+                    <p>These fields were not found in the extracted report:</p>
+                    <ul>
+                        {% for field in missing %}
+                            <li>{{ field.replace('_', ' ') | title }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+        {% else %}
+            <p class="muted">
+                Extracted information is unavailable in a readable structured format.
+                Manual review may be needed.
+            </p>
+        {% endif %}
+    </section>
+
+
+
+
+    <section class="card">
+        <h2>Screening Findings</h2>
+
+        <p class="muted">
+            These findings explain which items contributed to the automated
+            screening score. They may require further verification.
+        </p>
+
+        {% if analysis.findings %}
+            {% set findings = analysis.findings %}
+
+            {% if findings is string %}
+                <div class="finding">
+                    {{ findings }}
+                </div>
+
+            {% elif findings is sequence and findings is not mapping %}
+                {% for finding in findings %}
+                    <div class="finding">
+                        {% if finding is mapping %}
+                            <div class="finding-heading">
+                                {{ finding.get('reason', 'Screening finding') }}
+                            </div>
+
+                            {% if finding.get('points') is not none %}
+                                <div class="finding-points">
+                                    {{ finding.get('points') }} points
+                                </div>
+                            {% endif %}
+
+                        {% else %}
+                            {{ finding }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+            {% elif findings is mapping %}
+                {% for key, value in findings.items() %}
+                    <div class="finding">
+                        <div class="finding-heading">
+                            {{ key.replace('_', ' ') | title }}
+                        </div>
+                        <div>{{ value }}</div>
+                    </div>
+                {% endfor %}
+
+            {% else %}
+                <pre>{{ findings | tojson(indent=2) }}</pre>
+            {% endif %}
+
+        {% else %}
+            <p class="muted">
+                No findings were saved for this analysis.
+            </p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Important Information</h2>
+        <p class="notice">
+            MediTrust provides automated screening to identify information
+            that may need further review. A risk score is not proof of fraud,
+            and a low score is not proof that a document is genuine.
+            Clinical or authenticity decisions require appropriate
+            professional verification.
+        </p>
+    </section>
+
+</main>
+
+<script>
+document.querySelectorAll(".score-fill").forEach(function (bar) {
+    const score = Number(bar.dataset.score);
+
+    if (Number.isFinite(score)) {
+        bar.style.width = Math.max(0, Math.min(score, 100)) + "%";
+    }
+});
+</script>
+
+</body>
+</html>

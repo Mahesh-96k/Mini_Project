@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Dashboard | MediTrust</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fb;
+            color: #243247;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .header, .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .muted {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            background: #fff1cc;
+            color: #825500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .detail {
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .label {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            font-weight: bold;
+        }
+
+        .notice {
+            padding: 16px;
+            background: #fff7e6;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .logout-button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            color: white;
+            background: #b42318;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+        }
+        .hospital-title {
+        font-size: 36px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 12px;
+        color: #163b70;
+    }
+    </style>
+</head>
+
+<body>
+<main class="container">
+
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div role="status"
+                    style="background: #dcfce7; color: #166534;
+                            padding: 14px 18px; margin-bottom: 16px;
+                            border-radius: 8px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+
+
+
+    <header class="header">
+        <div>
+            <h1 class="hospital-title">{{ hospital.hospital_name }}</h1>
+            <p class="muted">Hospital Dashboard</p>
+            <p class="muted">Welcome, {{ username }}.</p>
+        </div>
+
+        <span class="badge">Development Demo</span>
+    </header>
+
+    <section class="card">
+        <h2>Hospital Profile</h2>
+        <p class="muted">
+            Hospital information associated with your login account.
+        </p>
+
+        <div class="grid">
+            <div class="detail">
+                <div class="label">Hospital Name</div>
+                <div class="value">{{ hospital.hospital_name }}</div>
+            </div>
+
+            <div class="detail">
+                <div class="label">Hospital ID</div>
+                <div class="value">{{ hospital.hospital_id }}</div>
+            </div>
+
+            <div class="detail">
+                <div class="label">City</div>
+                <div class="value">{{ hospital.city }}</div>
+            </div>
+
+            <div class="detail">
+                <div class="label">District</div>
+                <div class="value">{{ hospital.district }}</div>
+            </div>
+
+            <div class="detail">
+                <div class="label">State</div>
+                <div class="value">{{ hospital.state }}</div>
+            </div>
+
+            <div class="detail">
+                <div class="label">Demo Record</div>
+                <div class="value">
+                    {{ "Yes" if hospital.is_demo else "No" }}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Account Approval</h2>
+
+        {% if hospital.is_approved %}
+            <p class="badge">Approved</p>
+            <p class="muted">
+                The hospital record is marked as approved in the database.
+                This alone does not establish production authorization.
+            </p>
+        {% else %}
+            <p class="badge">Not Approved</p>
+            <p class="muted">
+                This hospital account is for development and demonstration.
+                Hospital verification and authorization workflows have not
+                yet been implemented.
+            </p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Hospital Services</h2>
+        <p class="muted">
+            Hospital document review, patient access requests, and
+            verification workflows will be added in future development steps.
+        </p>
+
+        <div class="notice">
+            <strong>Restricted demo access:</strong>
+            This dashboard currently displays hospital profile information
+            only. Patient medical records and protected document contents
+            are not available through this page.
+        </div>
+    </section>
+
+
+
+    <section class="card">
+        <h2>Patient Access Requests</h2>
+        <p class="muted">
+            Requests sent to this hospital for specific medical documents.
+            Pending requests do not grant access to medical report contents.
+        </p>
+
+        {% if access_requests %}
+            {% for item in access_requests %}
+                <div class="detail" style="margin-bottom: 16px;">
+                    <div class="grid">
+                        <div>
+                            <div class="label">Request ID</div>
+                            <div class="value">{{ item.request_id }}</div>
+                        </div>
+
+                        <div>
+                            <div class="label">Patient ID</div>
+                            <div class="value">{{ item.patient_id }}</div>
+                        </div>
+
+                        <div>
+                            <div class="label">Document Reference</div>
+                            <div class="value">
+                                {{ item.internal_reference or "Not available" }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="label">Status</div>
+                            <div class="value">{{ item.status | title }}</div>
+                        </div>
+
+
+                        {% if item.status == 'approved' %}
+                            <div style="margin-top: 12px;">
+                                <a href="{{ url_for(
+                                    'view_authorized_document',
+                                    request_id=item.request_id
+                                ) }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style="display: inline-block;
+                                        background: #2457d6;
+                                        color: white;
+                                        padding: 10px 16px;
+                                        border-radius: 7px;
+                                        text-decoration: none;">
+                                    View PDF
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <div>
+                            <div class="label">Requested At</div>
+                            <div class="value">
+                                {{ item.requested_at.strftime('%d-%m-%Y %H:%M')
+                                if item.requested_at else "Not available" }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="label">Expires At</div>
+                            <div class="value">
+                                {{ item.expires_at.strftime('%d-%m-%Y %H:%M')
+                                if item.expires_at else "Not available" }}
+                            </div>
+                            
+                            {% if item.status == 'pending' %}
+                                <div style="margin-top: 16px;">
+                                    <form method="post"
+                                        action="{{ url_for('decide_hospital_access_request',
+                                                            request_id=item.request_id) }}"
+                                        style="display: inline-block; margin-right: 8px;">
+                                        <input type="hidden" name="action" value="approve">
+                                        <button type="submit"
+                                                style="background: #15803d; color: white;
+                                                    border: none; border-radius: 7px;
+                                                    padding: 10px 16px; cursor: pointer;">
+                                            Approve
+                                        </button>
+                                    </form>
+
+                                    <form method="post"
+                                        action="{{ url_for('decide_hospital_access_request',
+                                                            request_id=item.request_id) }}"
+                                        style="display: inline-block;">
+                                        <input type="hidden" name="action" value="reject">
+                                        <button type="submit"
+                                                style="background: #b42318; color: white;
+                                                    border: none; border-radius: 7px;
+                                                    padding: 10px 16px; cursor: pointer;">
+                                            Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="muted">No access requests have been received yet.</p>
+        {% endif %}
+    </section>
+
+
+
+
+
+    <section class="card">
+        <h2>Account</h2>
+        <p class="muted">
+            Signed in as {{ username }}.
+        </p>
+
+        <form method="post" action="{{ url_for('logout') }}">
+            <button class="logout-button" type="submit">
+                Sign Out
+            </button>
+        </form>
+    </section>
+
+    <footer class="muted">
+        MediTrust · 2026 · Development version
+    </footer>
+
+</main>
+</body>
+</html>

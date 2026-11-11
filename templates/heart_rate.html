@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Rate | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="dashboard-page">
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> PATIENT PORTAL</small></span>
+        </a>
+
+        <p class="nav-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">⌂ Dashboard</a>
+            <a class="nav-link" href="{{ url_for('health_manager') }}">♥ Health Manager</a>
+            <a class="nav-link" href="{{ url_for('blood_sugar') }}">◉ Blood Sugar</a>
+            <a class="nav-link" href="{{ url_for('blood_pressure') }}">♥ Blood Pressure</a>
+            <a class="nav-link active" href="{{ url_for('heart_rate') }}">♥ Heart Rate</a>
+            <a class="nav-link" href="{{ url_for('verify_document') }}">✓ Verify a Document</a>
+            <a class="nav-link" href="{{ url_for('my_analyses') }}">◷ Analysis History</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <p class="nav-heading">YOUR ACCOUNT</p>
+
+            <div class="sidebar-help">
+                <div class="help-icon">i</div>
+                <strong>Your privacy matters</strong>
+                <p>Your health information should only be accessible to authorized users.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="logout-button" type="submit">
+                    Sign out
+                </button>
+            </form>
+
+        </div>
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+
+        <header class="topbar">
+            <div>
+                <span class="topbar-label">PERSONAL HEALTH MANAGEMENT</span>
+                <p class="topbar-title">Heart Rate Tracking</p>
+            </div>
+        </header>
+
+
+        <div class="dashboard-content">
+
+            <!-- WELCOME SECTION -->
+            <section class="welcome-banner">
+                <div class="welcome-copy">
+                    <span class="welcome-tag">HEART RATE TRACKING</span>
+
+                    <h1>Heart Rate</h1>
+
+                    <p>
+                        Record your heart rate measurements and
+                        compare your readings over time.
+                    </p>
+                </div>
+            </section>
+
+
+            <!-- ADD MEASUREMENT FORM -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Add Heart Rate Reading</h2>
+                        <p>Enter your heart rate measurement below.</p>
+                    </div>
+                </div>
+
+                <!-- FLASH MESSAGES -->
+                {% for message in get_flashed_messages() %}
+                    <p style="color: #087e75; font-weight: bold;">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+
+                <form method="POST" class="feature-card">
+
+                    <label for="value">Heart Rate (BPM)</label>
+
+                    <input
+                        type="number"
+                        id="value"
+                        name="value"
+                        min="1"
+                        max="300"
+                        required
+                        placeholder="Example: 72"
+                    >
+
+                    <br><br>
+
+                    <label for="recorded_at">Date and Time of Measurement</label>
+
+                    <input
+                        type="datetime-local"
+                        id="recorded_at"
+                        name="recorded_at"
+                        max="{{ max_datetime }}"
+                        required
+                    >
+
+                    <br><br>
+
+                    <label for="context">Additional Notes (Optional)</label>
+
+                    <input
+                        type="text"
+                        id="context"
+                        name="context"
+                        maxlength="50"
+                        placeholder="Example: After walking"
+                    >
+
+                    <br><br>
+
+                    <button type="submit" class="button button-primary">
+                        Save Measurement
+                    </button>
+
+                </form>
+
+            </section>
+
+
+            <!-- HEART RATE SUMMARY -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Heart Rate Summary</h2>
+                        <p>Your latest and previous recorded readings.</p>
+                    </div>
+                </div>
+
+                <div class="health-summary-grid">
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">LATEST HEART RATE</span>
+
+                        {% if latest %}
+                            <strong class="summary-value">
+                                {{ latest.value }} <small>BPM</small>
+                            </strong>
+
+                            <span class="summary-date">
+                                {{ latest.recorded_at }}
+                            </span>
+                        {% else %}
+                            <strong class="summary-empty">No reading yet</strong>
+                        {% endif %}
+                    </div>
+
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">PREVIOUS READING</span>
+
+                        {% if previous %}
+                            <strong class="summary-value">
+                                {{ previous.value }} <small>BPM</small>
+                            </strong>
+
+                            <span class="summary-date">
+                                {{ previous.recorded_at }}
+                            </span>
+                        {% else %}
+                            <strong class="summary-empty">No previous reading</strong>
+                        {% endif %}
+                    </div>
+
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">CHANGE IN HEART RATE</span>
+
+                        {% if latest and previous %}
+                            {% set difference = latest.value - previous.value %}
+
+                            <strong class="summary-value">
+                                {% if difference > 0 %}
+                                    +{{ difference }}
+                                {% elif difference < 0 %}
+                                    {{ difference }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                                <small>BPM</small>
+                            </strong>
+
+                            <span class="summary-date">
+                                Compared with previous reading
+                            </span>
+                        {% else %}
+                            <strong class="summary-empty">Not available</strong>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- HEART RATE INFORMATION -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Understanding Heart Rate</h2>
+                        <p>Learn what BPM means.</p>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+
+                    <h3>What is Heart Rate?</h3>
+
+                    <p>
+                        Heart rate is the number of times your heart
+                        beats in one minute. It is measured in BPM
+                        (Beats Per Minute).
+                    </p>
+
+                    <br>
+
+                    <h3>What affects Heart Rate?</h3>
+
+                    <p>
+                        Physical activity, sleep, stress, emotions,
+                        illness and medications can affect heart rate.
+                    </p>
+
+                    <br>
+
+                    <p style="color: #64748b; font-size: 13px;">
+                        Heart rate varies with age, activity and health.
+                        A change between two readings alone does not
+                        establish whether your health is improving or worsening.
+                        This page is for personal tracking, not diagnosis.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- HEART RATE HISTORY -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Heart Rate History</h2>
+                        <p>Your previously recorded measurements.</p>
+                    </div>
+                </div>
+
+                {% if measurements %}
+
+                    <div class="health-table-wrap">
+                        <table class="health-table">
+
+                            <thead>
+                                <tr>
+                                    <th>Heart Rate</th>
+                                    <th>Recorded At</th>
+                                    <th>Notes</th>
+                                    <th>Uploaded At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for record in measurements %}
+                                    <tr>
+
+                                        <td>
+                                            <strong class="measurement-value">
+                                                {{ record.value }} BPM
+                                            </strong>
+                                        </td>
+
+                                        <td>{{ record.recorded_at }}</td>
+
+                                        <td>{{ record.context or '—' }}</td>
+
+                                        <td>{{ record.uploaded_at }}</td>
+
+                                        <td>
+                                            <form method="POST"
+                                                  action="{{ url_for('delete_heart_rate', measurement_id=record.measurement_id) }}"
+                                                  onsubmit="return confirm('Are you sure you want to delete this heart rate measurement?');">
+
+                                                <button type="submit" class="delete-record-btn">
+                                                    Delete
+                                                </button>
+
+                                            </form>
+                                        </td>
+
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                {% else %}
+
+                    <div class="feature-card">
+                        <h3>No measurements yet</h3>
+                        <p>Your saved heart rate readings will appear here.</p>
+                    </div>
+
+                {% endif %}
+
+            </section>
+
+
+            <!-- FOOTER -->
+            <footer class="dashboard-footer">
+                <span>© 2026 MediTrust · Development version</span>
+                <span>Measurements are records, not a medical diagnosis.</span>
+            </footer>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

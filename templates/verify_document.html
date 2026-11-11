@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Verify a Document | MediTrust</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .verify-card {
+            width: min(650px, 100%);
+            padding: 30px;
+            background: white;
+            border: 1px solid #e2e9ed;
+            border-radius: 16px;
+        }
+
+        .upload-box {
+            margin: 24px 0;
+            padding: 25px;
+            text-align: center;
+            border: 2px dashed #b9d9d3;
+            border-radius: 12px;
+            background: #f7fbfa;
+        }
+
+        .upload-box input {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .notice {
+            padding: 14px;
+            background: #f1f8f7;
+            border-radius: 9px;
+            color: #4f6969;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body class="auth-page">
+    <main class="verify-card">
+        <div class="brand">
+            <span class="brand-mark">M</span>
+            MediTrust
+        </div>
+
+        <p class="eyebrow" style="margin-top: 30px;">
+            DOCUMENT ANALYSIS
+        </p>
+
+        <h1>Verify a Medical Report</h1>
+
+        <p class="muted">
+            Upload a PDF report to extract its fields and check for
+            configured inconsistencies.
+        </p>
+
+        {% for message in get_flashed_messages() %}
+            <p class="alert">{{ message }}</p>
+        {% endfor %}
+
+        <form method="POST"
+              action="{{ url_for('verify_document') }}"
+              enctype="multipart/form-data">
+
+            <div class="upload-box">
+                <strong>Select a medical report</strong>
+                <p class="muted">
+                    PDF format only · Maximum size: 10 MB
+                </p>
+
+                <input type="file"
+                       name="report"
+                       accept=".pdf,application/pdf"
+                       required>
+            </div>
+
+            <button class="button button-primary button-full"
+                    type="submit">
+                Analyze report
+            </button>
+        </form>
+
+        <p class="notice" style="margin-top: 22px;">
+            Use synthetic test reports during development.
+            A risk score is a screening indicator, not proof that
+            a document is genuine or fraudulent.
+        </p>
+
+        <p>
+            <a href="{{ url_for('dashboard') }}">
+                Back to Patient Dashboard
+            </a>
+        </p>
+    </main>
+</body>
+</html>

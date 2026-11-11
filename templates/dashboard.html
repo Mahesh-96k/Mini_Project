@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="dashboard-page">
+
+<div class="app-shell">
+
+    <aside class="sidebar">
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> PATIENT PORTAL</small></span>
+        </a>
+
+        <p class="nav-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav" aria-label="Patient navigation">
+            <a class="nav-link active" href="{{ url_for('dashboard') }}">
+                <span class="nav-icon">⌂</span> Dashboard
+            </a>
+            <a class="nav-link" href="#documents">
+                <span class="nav-icon">▤</span> My Medical Documents
+            </a>
+            <a class="nav-link" href="{{ url_for('verify_document') }}">
+                <span class="nav-icon">✓</span> Verify a Document
+            </a>
+            
+            <a class="nav-link" href="{{ url_for('my_analyses') }}">
+                <span class="nav-icon">◷</span> My Analysis History
+            </a>
+
+
+
+            <a class="nav-link" href="#hospital-requests">
+                <span class="nav-icon">＋</span> Hospital Requests
+            </a>
+            <a class="nav-link" href="#my-requests">
+                <span class="nav-icon">◷</span> My Requests
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <p class="nav-heading">YOUR ACCOUNT</p>
+            <a class="nav-link" href="#account">
+                <span class="nav-icon">⚙</span> Account &amp; Privacy
+            </a>
+
+            <div class="sidebar-help">
+                <div class="help-icon">i</div>
+                <strong>Your privacy matters</strong>
+                <p>Your medical records should only be accessible to authorized users.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="logout-button" type="submit">
+                    <span class="nav-icon">↪</span> Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="topbar">
+            <div>
+                <span class="topbar-label">MEDICAL RECORDS &amp; VERIFICATION</span>
+                <p class="topbar-title">Patient Portal</p>
+            </div>
+            <div class="topbar-profile">
+                <div class="avatar">{{ full_name[:1]|upper }}</div>
+                <div class="profile-text">
+                    <strong>{{ full_name }}</strong>
+                    <span>Patient account</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="welcome-banner">
+                <div class="welcome-copy">
+                    <span class="welcome-tag">YOUR PERSONAL HEALTH SPACE</span>
+                    <h1>Welcome back, {{ full_name }}!</h1>
+                    <p>Manage your medical documents and keep track of your verification requests in one place.</p>
+                </div>
+                <div class="welcome-symbol" aria-hidden="true">
+                    <div class="symbol-circle">+</div>
+                    <span class="symbol-dot dot-one"></span>
+                    <span class="symbol-dot dot-two"></span>
+                </div>
+            </section>
+
+            <section class="section-block" id="account">
+                <div class="section-heading">
+                    <div>
+                        <h2>Your account</h2>
+                        <p>Your registered MediTrust identity.</p>
+                    </div>
+                    <span class="status-pill"><span></span> Registered</span>
+                </div>
+
+                <div class="account-grid">
+                    <article class="account-card">
+                        <div class="account-card-icon">♙</div>
+                        <div class="account-card-label">FULL NAME</div>
+                        <div class="account-card-value">{{ full_name }}</div>
+                    </article>
+
+                    <article class="account-card">
+                        <div class="account-card-icon">@</div>
+                        <div class="account-card-label">USERNAME</div>
+                        <div class="account-card-value">{{ username }}</div>
+                    </article>
+
+                    <article class="account-card pid-card">
+                        <div class="account-card-icon">⌑</div>
+                        <div class="account-card-label">GLOBAL PATIENT ID</div>
+                        <div class="account-card-value pid-value">{{ global_pid }}</div>
+                        <div class="account-card-note">Your unique MediTrust identifier</div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="section-block" id="documents">
+                <div class="section-heading">
+                    <div>
+                        <h2>Your medical workspace</h2>
+                        <p>Choose what you'd like to do next.</p>
+                    </div>
+                </div>
+
+                <div class="feature-grid">
+
+                    <article class="feature-card">
+                        <div class="feature-icon icon-teal">♥</div>
+                        <span class="feature-label">PERSONAL HEALTH MANAGEMENT</span>
+                        <h3>Personal Health Manager</h3>
+                        <p>Track your health measurements, monitor trends, and manage your personal health history.</p>
+                        <a class="button button-primary"
+                        href="{{ url_for('health_manager') }}">
+                            Open Health Manager
+                        </a>
+                    </article>
+
+
+
+
+                    <article class="feature-card" id="my-documents">
+                        <div class="feature-icon icon-teal">▤</div>
+                        <span class="feature-label">MEDICAL RECORDS</span>
+                        <h3>My Medical Documents</h3>
+                        <p>Access documents associated with your account when this feature is available.</p>
+                        <span class="feature-coming">Coming soon</span>
+                    </article>
+
+                    <article class="feature-card" id="verify">
+                        <div class="feature-icon icon-blue">✓</div>
+                        <span class="feature-label">DOCUMENT CHECK</span>
+                        <h3>Verify a Document</h3>
+                        <p>Submit a medical document for a structured verification review.</p>
+                        <a class="button button-primary"
+                        href="{{ url_for('verify_document') }}">
+                        Upload a Report
+                        </a>
+                    </article>
+
+                    
+                    <article class="feature-card">
+                        <div class="feature-icon icon-purple">◷</div>
+                        <span class="feature-label">ANALYSIS RECORDS</span>
+                        <h3>My Analysis History</h3>
+                        <p>View your previous document analyses, risk scores, and review statuses.</p>
+                        <a class="button button-primary"
+                        href="{{ url_for('my_analyses') }}">
+                            View History
+                        </a>
+                    </article>
+
+                    <article class="feature-card" id="hospital-requests">
+                        <div class="feature-icon icon-purple">＋</div>
+                        <span class="feature-label">HOSPITAL SERVICES</span>
+                        <h3>Request Documents</h3>
+                        <p>Request access to records from a linked hospital through an authorized workflow.</p>
+                        <span class="feature-coming">Coming soon</span>
+                    </article>
+
+                    <article class="feature-card" id="my-requests">
+                        <div class="feature-icon icon-amber">◷</div>
+                        <span class="feature-label">REQUEST TRACKING</span>
+                        <h3>My Requests</h3>
+                        <p>Review the status of your document-access requests.</p>
+                        <span class="feature-coming">Coming soon</span>
+                    </article>
+                </div>
+            </section>
+
+            <footer class="dashboard-footer">
+                <span>© 2026 MediTrust · Development version</span>
+                <span>Medical document screening is not proof of authenticity.</span>
+            </footer>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

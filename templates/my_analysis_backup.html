@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Analysis History | MediTrust</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243247;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header, .analysis-card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 { margin-top: 0; }
+
+        .muted { color: #64748b; }
+
+        .analysis-card {
+            border-left: 5px solid #64748b;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 18px;
+        }
+
+        .label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .value {
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        .button {
+            display: inline-block;
+            background: #2457d6;
+            color: white;
+            padding: 11px 16px;
+            text-decoration: none;
+            border-radius: 7px;
+        }
+
+        .button.secondary {
+            background: #475569;
+        }
+
+        .notice {
+            background: #fff7e6;
+            padding: 14px;
+            border-radius: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <section class="header">
+            <h1>My Analysis History</h1>
+            <p class="muted">
+                View the medical document analyses associated with your account.
+            </p>
+
+            <div class="actions">
+                <a class="button" href="{{ url_for('verify_document') }}">
+                    Analyze Another Report
+                </a>
+                <a class="button secondary" href="{{ url_for('dashboard') }}">
+                    Back to Dashboard
+                </a>
+            </div>
+        </section>
+
+        {% if analyses %}
+            {% for item in analyses %}
+                <section class="analysis-card">
+                    
+
+                    
+                    <h2>
+                        <a href="{{ url_for('analysis_details', analysis_id=item.analysis_id) }}"
+                        style="color: #2457d6; text-decoration: none;">
+                            Analysis #{{ item.analysis_id }} — View Details →
+                        </a>
+                    </h2>
+
+
+
+                    <div class="details">
+                        <div>
+                            <div class="label">MediTrust Reference</div>
+                            <div class="value">
+                                {{ item.internal_reference or "Not available" }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="label">Date Submitted</div>
+                            <div class="value">
+                                {{ item.created_at.strftime('%d-%m-%Y %H:%M')
+                                   if item.created_at else "Not available" }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="label">Risk Score</div>
+                            <div class="value">{{ item.risk_score }}/100</div>
+                        </div>
+
+                        <div>
+                            <div class="label">Risk Level</div>
+                            <div class="value">{{ item.risk_level }}</div>
+                        </div>
+
+                        <div>
+                            <div class="label">Review Status</div>
+                            <div class="value">{{ item.review_status }}</div>
+                        </div>
+                    </div>
+                </section>
+            {% endfor %}
+        {% else %}
+            <section class="analysis-card">
+                <h2>No analyses yet</h2>
+                <p class="muted">
+                    Once you analyze a medical report, its history will appear here.
+                </p>
+                <a class="button" href="{{ url_for('verify_document') }}">
+                    Analyze Your First Report
+                </a>
+            </section>
+        {% endif %}
+
+        <p class="notice">
+            <strong>Important:</strong> These results are automated screening
+            indicators, not proof that a medical report is genuine or fraudulent.
+            Reports may require review by an authorized professional.
+        </p>
+    </main>
+</body>
+</html>

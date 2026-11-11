@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analysis Results | MediTrust</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .result-card {
+            width: min(850px, 100%);
+            box-sizing: border-box;
+            padding: 30px;
+            background: white;
+            border: 1px solid #e2e9ed;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+        }
+        .result-item {
+            padding: 14px;
+            background: #f6f9fa;
+            border-radius: 9px;
+            overflow-wrap: anywhere;
+        }
+        .result-label {
+            color: #617477;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .result-value {
+            color: #183b40;
+            font-weight: 600;
+        }
+        .risk-score {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        .finding {
+            padding: 12px;
+            margin: 10px 0;
+            background: #f6f9fa;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+        .notice {
+            padding: 15px;
+            background: #f1f8f7;
+            border-radius: 9px;
+            color: #456564;
+            line-height: 1.6;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        @media (max-width: 600px) {
+            .result-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body class="auth-page">
+    <main class="result-card">
+        <div class="brand">
+            <span class="brand-mark">M</span>
+            MediTrust
+        </div>
+
+        <p class="eyebrow" style="margin-top: 28px;">
+            DOCUMENT ANALYSIS
+        </p>
+        <h1>Analysis Results</h1>
+        <p class="muted">File: {{ original_filename }}</p>
+
+        {% if result.get('internal_reference') %}
+        <section class="result-card">
+            <h2>MediTrust Reference</h2>
+
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="result-label">Internal Reference</div>
+                    <div class="result-value">
+                        {{ result.get('internal_reference') }}
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">Document ID</div>
+                    <div class="result-value">
+                        {{ result.get('document_id') }}
+                    </div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">Analysis ID</div>
+                    <div class="result-value">
+                        {{ result.get('analysis_id') }}
+                    </div>
+                </div>
+            </div>
+
+            <p class="notice">
+                Patient-submitted document. Not hospital-verified.
+            </p>
+        </section>
+        {% endif %}
+
+
+
+
+
+
+
+
+
+
+        {% set fraud = result.get('fraud_analysis', {}) %}
+        {% set extracted = result.get('extracted_data', {}) %}
+
+        <section class="result-card">
+            <h2>Analysis status</h2>
+            <p class="result-value">
+                {{ result.get('status', 'Unknown') | replace('_', ' ') | title }}
+            </p>
+
+            {% if result.get('reason') %}
+                <p>{{ result.get('reason') }}</p>
+            {% endif %}
+
+            {% if fraud %}
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-label">Risk score</div>
+                        <div class="risk-score">
+                            {{ fraud.get('risk_score', 'N/A') }}
+                        </div>
+                        <div class="muted">Configured screening checks</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Risk level</div>
+                        <div class="result-value">
+                            {{ fraud.get('risk_level', 'Not available') }}
+                        </div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Review status</div>
+                        <div class="result-value">
+                            {{ fraud.get('review_status', 'Not available')
+                               | replace('_', ' ') | title }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        {% if extracted %}
+        <section class="result-card">
+            <h2>Extracted report details</h2>
+            <div class="result-grid">
+                {% for label, key in [
+                    ('Patient name', 'patient_name'),
+                    ('Patient ID', 'patient_id'),
+                    ('Hospital', 'hospital_name'),
+                    ('Report number', 'report_number'),
+                    ('Report date', 'report_date'),
+                    ('Doctor', 'doctor_name'),
+                    ('Test name', 'test_name'),
+                    ('Test result', 'test_result')
+                ] %}
+                    <div class="result-item">
+                        <div class="result-label">{{ label }}</div>
+                        <div class="result-value">
+                            {{ extracted.get(key) or 'Not found in report' }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if extracted.get('missing_fields') %}
+                <h3>Missing fields</h3>
+                <ul>
+                    {% for field in extracted.get('missing_fields', []) %}
+                        <li>{{ field }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if fraud.get('findings') %}
+        <section class="result-card">
+            <h2>Screening findings</h2>
+            {% for finding in fraud.get('findings', []) %}
+                <div class="finding">
+                    {% if finding is mapping %}
+                        <strong>{{ finding.get('check', 'Finding') }}</strong>
+                        <p>{{ finding.get('message', finding) }}</p>
+                    {% else %}
+                        {{ finding }}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if result.get('pages') %}
+        <section class="result-card">
+            <h2>PDF extraction details</h2>
+            {% for page in result.get('pages', []) %}
+                <div class="finding">
+                    Page {{ page.get('page', '?') }} —
+                    {{ page.get('method', 'Unknown method') }}
+                    {% if page.get('needs_review') %}
+                        <strong> — Manual review recommended</strong>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <div class="notice">
+            <strong>Important:</strong>
+            This result is an automated screening assessment, not proof
+            that a medical report is genuine or fraudulent. A low risk
+            score does not establish authenticity. Review flagged or
+            uncertain results with an authorized professional.
+        </div>
+
+        <div class="actions">
+            <a class="button button-primary"
+               href="{{ url_for('verify_document') }}">
+                Analyze another report
+            </a>
+            <a href="{{ url_for('dashboard') }}">
+                Back to dashboard
+            </a>
+        </div>
+    </main>
+</body>
+</html>

@@ -221,6 +221,131 @@
 
             </section>
 
+            <!-- INTERACTIVE HEART RATE CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Cardio Pulse & Heart Rate Trajectory</h2>
+                            <p>Chronological tracking of resting and active heart rate measurements with standard adult reference zones.</p>
+                        </div>
+                        <div>
+                            <span style="font-size: 12px; font-weight: 700; color: #be123c; background: #ffe4e6; padding: 4px 10px; border-radius: 6px;">
+                                ● Heart Rate (BPM)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="hrChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Reference Zones: <span style="color: #16a34a; font-weight: 600;">Normal Resting: 60–100 BPM</span> · <span style="color: #d97706; font-weight: 600;">Bradycardia: &lt;60 BPM</span> · <span style="color: #dc2626; font-weight: 600;">Tachycardia: &gt;100 BPM</span>
+                            </div>
+                            <div>
+                                Hover over points to view notes & context.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No heart rate records yet. Log your first reading above to view cardio pulse analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("hrChart");
+                if (!ctx) return;
+
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b %H:%M') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+
+                const hrData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const notesData = [
+                    {% for r in chrono %}"{{ r.context or '' }}"{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "Heart Rate (BPM)",
+                                data: hrData,
+                                borderColor: "#e11d48",
+                                backgroundColor: "rgba(225, 29, 72, 0.08)",
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: "#e11d48",
+                                pointRadius: 6,
+                                pointHoverRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const note = notesData[idx];
+                                        return note ? ("Context: " + note) : "";
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    usePointStyle: true,
+                                    font: { size: 12, weight: "bold" }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 40,
+                                suggestedMax: 130,
+                                title: {
+                                    display: true,
+                                    text: "Beats Per Minute (BPM)",
+                                    font: { weight: "bold", size: 12 }
+                                },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { maxRotation: 45, minRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="heart_rate"></div>
+            {% include "ai_insight_card.html" %}
 
             <!-- HEART RATE INFORMATION -->
             <section class="section-block">

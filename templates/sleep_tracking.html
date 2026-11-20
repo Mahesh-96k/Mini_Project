@@ -229,10 +229,122 @@
 
             </section>
 
+            <!-- INTERACTIVE SLEEP CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Sleep Duration & Efficiency Analytics</h2>
+                            <p>Visualizing hours of sleep and calculated rest efficiency across sessions.</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 4px 10px; border-radius: 6px;">
+                                ■ Sleep Duration (Hours)
+                            </span>
+                            <span style="font-size: 12px; font-weight: 700; color: #047857; background: #d1fae5; padding: 4px 10px; border-radius: 6px;">
+                                ● Sleep Efficiency (%)
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="sleepChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Clinical Benchmark: 7–9 hours recommended for adults with &gt;85% sleep efficiency.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No sleep sessions logged yet. Log your first sleep record above to view rest analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
 
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("sleepChart");
+                if (!ctx) return;
 
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
 
+                const durationData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const efficiencyData = [
+                    {% for r in chrono %}{{ r.secondary_value or 0 }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                type: "bar",
+                                label: "Sleep Duration (Hours)",
+                                data: durationData,
+                                backgroundColor: "rgba(30, 64, 175, 0.75)",
+                                borderRadius: 6,
+                                yAxisID: "y"
+                            },
+                            {
+                                type: "line",
+                                label: "Efficiency (%)",
+                                data: efficiencyData,
+                                borderColor: "#10b981",
+                                backgroundColor: "#10b981",
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                pointRadius: 5,
+                                yAxisID: "y1"
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: "top",
+                                labels: { font: { weight: "bold" } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 0,
+                                suggestedMax: 12,
+                                title: { display: true, text: "Hours", font: { weight: "bold" } },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            y1: {
+                                min: 0,
+                                max: 100,
+                                position: "right",
+                                title: { display: true, text: "Efficiency (%)", font: { weight: "bold" } },
+                                grid: { display: false }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="sleep"></div>
+            {% include "ai_insight_card.html" %}
 
             <!-- SLEEP INFORMATION -->
             <section class="section-block">

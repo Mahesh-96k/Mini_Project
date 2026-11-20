@@ -91,30 +91,154 @@
             </section>
 
 
-            <!-- DOWNLOAD HEALTH HISTORY -->
-            <section class="section-block">
-                <div class="feature-card"
-                    style="display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            flex-wrap: wrap;
-                            gap: 20px;">
+            <!-- FLASH MESSAGES -->
+            {% for message in get_flashed_messages() %}
+                <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 18px; border-radius: 8px; margin: 16px 0; font-size: 13px; font-weight: 500;">
+                    ⚠ {{ message }}
+                </div>
+            {% endfor %}
 
-                    <div>
-                        <span class="feature-label">YOUR HEALTH RECORDS</span>
-                        <h3>Complete Health History</h3>
-                        <p>
-                            Download your health measurements, summaries
-                            and trend graphs in one PDF report.
-                        </p>
+            <!-- CUSTOM HEALTH REPORT GENERATOR -->
+            <section class="section-block">
+                <div class="feature-card" style="padding: 24px;">
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid #e5ecef; padding-bottom: 15px;">
+                        <div>
+                            <span class="feature-label">REPORT GENERATOR</span>
+                            <h2 style="margin: 4px 0 6px 0; font-size: 20px; color: #17324D;">Custom Health Report</h2>
+                            <p style="margin: 0; min-height: auto; font-size: 13px; color: #64748b;">
+                                Select categories and time period to generate a personalized PDF medical history report.
+                            </p>
+                        </div>
+
+                        <!-- Direct 1-Click Complete History Actions -->
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <a href="{{ url_for('download_health_history_pdf') }}"
+                               class="outline-button"
+                               title="Download complete health history PDF"
+                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; font-size: 12px; font-weight: 600; text-decoration: none; color: #087E75; border: 1px solid #087E75; border-radius: 8px; background: #f0fdfa;">
+                                <span>📥</span> Download Full History
+                            </a>
+                            <a href="{{ url_for('download_health_history_pdf', delivery='email') }}"
+                               class="outline-button"
+                               title="Email complete health history PDF directly to your inbox"
+                               style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; font-size: 12px; font-weight: 600; text-decoration: none; color: #1e40af; border: 1px solid #3b82f6; border-radius: 8px; background: #eff6ff;">
+                                <span>📧</span> Email Full History
+                            </a>
+                        </div>
                     </div>
 
-                    <a href="{{ url_for('download_health_history_pdf') }}"
-                    class="primary-button"
-                    style="text-decoration: none;">
-                        ↓ Download Health History PDF
-                    </a>
+                    <form method="POST" action="{{ url_for('download_custom_health_report_pdf') }}" id="reportForm">
 
+                        <!-- SECTION A: CATEGORIES -->
+                        <div style="margin-bottom: 22px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <strong style="font-size: 13px; color: #17324D; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    1. Select Health Categories
+                                </strong>
+                                <div style="font-size: 12px;">
+                                    <button type="button" id="selectAllCategoriesBtn" style="background: none; border: none; color: #087E75; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0 6px;">Select All</button>
+                                    |
+                                    <button type="button" id="deselectAllCategoriesBtn" style="background: none; border: none; color: #64748b; cursor: pointer; text-decoration: underline; padding: 0 6px;">Deselect All</button>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="blood_sugar" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Blood Sugar</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="blood_pressure" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Blood Pressure</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="heart_rate" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Heart Rate</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="weight" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Weight</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="sleep" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Sleep Duration</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b; user-select: none;">
+                                    <input type="checkbox" name="categories" value="temperature" class="category-checkbox" checked style="accent-color: #087E75; width: 16px; height: 16px;">
+                                    <span>Body Temperature</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- SECTION B: TIME PERIOD -->
+                        <div style="margin-bottom: 22px;">
+                            <strong style="display: block; font-size: 13px; color: #17324D; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+                                2. Select Time Period
+                            </strong>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="last_7_days" class="date-preset-radio" style="accent-color: #087E75;">
+                                    <span>Last 7 Days</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="last_15_days" class="date-preset-radio" style="accent-color: #087E75;">
+                                    <span>Last 15 Days</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="last_30_days" class="date-preset-radio" checked style="accent-color: #087E75;">
+                                    <span>Last 30 Days</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="last_3_months" class="date-preset-radio" style="accent-color: #087E75;">
+                                    <span>Last 3 Months</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="all_time" class="date-preset-radio" style="accent-color: #087E75;">
+                                    <span>All Time</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #1e293b;">
+                                    <input type="radio" name="date_range" value="custom" id="customRangeRadio" class="date-preset-radio" style="accent-color: #087E75;">
+                                    <span>Custom Dates</span>
+                                </label>
+                            </div>
+
+                            <!-- Custom Date Inputs (hidden unless 'custom' is selected) -->
+                            <div id="customDateFields" style="display: none; padding: 14px; background: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 8px; margin-top: 10px; gap: 15px; flex-wrap: wrap; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="startDateInput" style="font-size: 12px; font-weight: 600; color: #134e4a;">From:</label>
+                                    <input type="date" id="startDateInput" name="start_date" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label for="endDateInput" style="font-size: 12px; font-weight: 600; color: #134e4a;">To:</label>
+                                    <input type="date" id="endDateInput" name="end_date" style="padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ACTIONS -->
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+                            <button type="submit" name="delivery_method" value="download" class="primary-button" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span>📥</span> Download Custom Report
+                            </button>
+                            <button type="submit" name="delivery_method" value="email" class="primary-button" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; background: #0f766e; border-color: #0f766e;">
+                                <span>📧</span> Send Report to My Email
+                            </button>
+                            <span id="validationWarning" style="color: #dc2626; font-size: 13px; display: none;"></span>
+                        </div>
+
+                    </form>
                 </div>
             </section>
 
@@ -280,6 +404,73 @@
     </main>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const customRadio = document.getElementById("customRangeRadio");
+    const customFields = document.getElementById("customDateFields");
+    const dateRadios = document.querySelectorAll(".date-preset-radio");
+    const reportForm = document.getElementById("reportForm");
+    const warning = document.getElementById("validationWarning");
+    const selectAllBtn = document.getElementById("selectAllCategoriesBtn");
+    const deselectAllBtn = document.getElementById("deselectAllCategoriesBtn");
+    const checkboxes = document.querySelectorAll(".category-checkbox");
+
+    function updateCustomDateVisibility() {
+        if (customRadio && customRadio.checked) {
+            customFields.style.display = "flex";
+        } else if (customFields) {
+            customFields.style.display = "none";
+        }
+    }
+
+    dateRadios.forEach(function (radio) {
+        radio.addEventListener("change", updateCustomDateVisibility);
+    });
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener("click", function () {
+            checkboxes.forEach(function (cb) { cb.checked = true; });
+        });
+    }
+
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener("click", function () {
+            checkboxes.forEach(function (cb) { cb.checked = false; });
+        });
+    }
+
+    if (reportForm) {
+        reportForm.addEventListener("submit", function (e) {
+            warning.style.display = "none";
+            const anyChecked = Array.from(checkboxes).some(function (cb) { return cb.checked; });
+            if (!anyChecked) {
+                e.preventDefault();
+                warning.textContent = "Please select at least one health category.";
+                warning.style.display = "inline";
+                return;
+            }
+
+            if (customRadio && customRadio.checked) {
+                const start = document.getElementById("startDateInput").value;
+                const end = document.getElementById("endDateInput").value;
+                if (!start || !end) {
+                    e.preventDefault();
+                    warning.textContent = "Please specify both start and end dates.";
+                    warning.style.display = "inline";
+                    return;
+                }
+                if (start > end) {
+                    e.preventDefault();
+                    warning.textContent = "Start date cannot be later than end date.";
+                    warning.style.display = "inline";
+                    return;
+                }
+            }
+        });
+    }
+});
+</script>
 
 </body>
 </html>

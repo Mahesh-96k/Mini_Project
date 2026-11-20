@@ -223,6 +223,124 @@
 
             </section>
 
+            <!-- INTERACTIVE WEIGHT CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Body Weight Trajectory & Trends</h2>
+                            <p>Track longitudinal weight stability and gradual changes over time.</p>
+                        </div>
+                        <div>
+                            <span style="font-size: 12px; font-weight: 700; color: #4338ca; background: #e0e7ff; padding: 4px 10px; border-radius: 6px;">
+                                ● Weight (kg)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="weightChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Short-term shifts of 1–2 kg often reflect water balance, glycogen, and hydration rather than body fat changes.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No weight records yet. Log your first reading above to view body weight analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("weightChart");
+                if (!ctx) return;
+
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b %H:%M') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+
+                const weightData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const notesData = [
+                    {% for r in chrono %}"{{ r.context or '' }}"{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "Weight (kg)",
+                                data: weightData,
+                                borderColor: "#6366f1",
+                                backgroundColor: "rgba(99, 102, 241, 0.08)",
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: "#6366f1",
+                                pointRadius: 6,
+                                pointHoverRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const note = notesData[idx];
+                                        return note ? ("Notes: " + note) : "";
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    usePointStyle: true,
+                                    font: { size: 12, weight: "bold" }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                suggestedMin: Math.min(...weightData) - 5,
+                                suggestedMax: Math.max(...weightData) + 5,
+                                title: {
+                                    display: true,
+                                    text: "Weight (kg)",
+                                    font: { weight: "bold", size: 12 }
+                                },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { maxRotation: 45, minRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="weight"></div>
+            {% include "ai_insight_card.html" %}
 
             <!-- WEIGHT INFORMATION -->
             <section class="section-block">

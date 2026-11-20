@@ -14,7 +14,15 @@ from analysis_storage import (
 )
 from werkzeug.utils import secure_filename
 from run_analysis import run_analysis
+from document_analyzer import summarize_medical_report
+from ai_health_advisor import generate_measurement_insight, answer_followup_question
 from health_history_pdf import generate_health_history_pdf
+from email_service import (
+    generate_and_store_otp,
+    verify_otp as verify_otp_service,
+    send_otp_email,
+    send_health_report_email,
+)
 from datetime import timedelta
 from functools import wraps
 
@@ -23,6 +31,7 @@ from dotenv import load_dotenv
 from flask import (
     Flask,
     flash,
+    jsonify,
     redirect,
     render_template,
     render_template_string,
@@ -220,7 +229,7 @@ def login():
 
             cursor.execute(
                 """
-                SELECT user_id, username, password_hash, role, is_active
+                SELECT user_id, username, email, password_hash, role, is_active
                 FROM users
                 WHERE username = %s
                 LIMIT 1
@@ -253,14 +262,118 @@ def login():
             flash("This login page is for patient accounts.")
             return render_template("login.html"), 403
 
-        # Clear any old session values before creating a new session.
+        # Two-Step Verification (2FA)
         session.clear()
-        session.permanent = True
-        session["user_id"] = user["user_id"]
-        session["username"] = user["username"]
-        session["role"] = user["role"]
+        session["pending_2fa_user_id"] = user["user_id"]
+        session["pending_2fa_username"] = user["username"]
+        session["pending_2fa_role"] = user["role"]
 
-        return redirect(url_for("dashboard"))
+        user_email = (user.get("email") or "").strip()
+
+        if user_email:
+            session["pending_2fa_email"] = user_email
+            connection = None
+            try:
+                connection = get_connection()
+                otp_code = generate_and_store_otp(connection, user["user_id"], purpose="login")
+                send_otp_email(user_email, otp_code, username=user["username"])
+            except Exception:
+                app.logger.exception("Failed to send 2FA OTP")
+                flash("Could not generate security code. Please try again.")
+                return redirect(url_for("login"))
+            finally:
+                if connection is not None:
+                    connection.close()
+
+            flash("A 6-digit security code has been sent to your registered email.")
+            return redirect(url_for("verify_otp"))
+        else:
+            # Account doesn't have an email yet; prompt patient to provide one
+            return redirect(url_for("verify_otp", need_email=1))
+
+    return render_template("login.html")
+
+
+@app.route("/verify-otp", methods=["GET", "POST"])
+def verify_otp():
+    pending_user_id = session.get("pending_2fa_user_id")
+    if not pending_user_id:
+        flash("Please sign in first to continue.")
+        return redirect(url_for("login"))
+
+    pending_email = session.get("pending_2fa_email")
+    need_email = request.args.get("need_email") == "1" or not pending_email
+
+    if request.method == "POST":
+        action = request.form.get("action", "verify").strip()
+        connection = None
+
+        try:
+            connection = get_connection()
+
+            # Action 1: Set email if not already on file
+            if action == "set_email":
+                new_email = request.form.get("email", "").strip().lower()
+                if not new_email or "@" not in new_email:
+                    flash("Please provide a valid email address.")
+                    return render_template("verify_otp.html", need_email=True, email=None)
+
+                cursor = connection.cursor(dictionary=True)
+                cursor.execute(
+                    "UPDATE users SET email = %s WHERE user_id = %s",
+                    (new_email, pending_user_id)
+                )
+                connection.commit()
+                cursor.close()
+
+                session["pending_2fa_email"] = new_email
+                otp_code = generate_and_store_otp(connection, pending_user_id, purpose="login")
+                send_otp_email(new_email, otp_code, username=session.get("pending_2fa_username", "Patient"))
+                flash(f"Email registered! A 6-digit security code has been sent to {new_email}.")
+                return redirect(url_for("verify_otp"))
+
+            # Action 2: Resend OTP
+            elif action == "resend":
+                if not pending_email:
+                    return redirect(url_for("verify_otp", need_email=1))
+
+                otp_code = generate_and_store_otp(connection, pending_user_id, purpose="login")
+                send_otp_email(pending_email, otp_code, username=session.get("pending_2fa_username", "Patient"))
+                flash("A new security code has been sent to your email.")
+                return redirect(url_for("verify_otp"))
+
+            # Action 3: Verify OTP code
+            else:
+                submitted_code = request.form.get("otp_code", "").strip()
+                is_valid, message = verify_otp_service(connection, pending_user_id, submitted_code, purpose="login")
+
+                if is_valid:
+                    # Upgrade session to fully authenticated
+                    session.permanent = True
+                    session["user_id"] = session["pending_2fa_user_id"]
+                    session["username"] = session["pending_2fa_username"]
+                    session["role"] = session["pending_2fa_role"]
+
+                    session.pop("pending_2fa_user_id", None)
+                    session.pop("pending_2fa_username", None)
+                    session.pop("pending_2fa_role", None)
+                    session.pop("pending_2fa_email", None)
+
+                    flash("Sign in successful! Two-step verification complete.")
+                    return redirect(url_for("dashboard"))
+                else:
+                    flash(message)
+                    return render_template("verify_otp.html", need_email=False, email=pending_email)
+
+        except mysql.connector.Error:
+            app.logger.exception("Database error during OTP verification")
+            flash("Database service error. Please try again.")
+            return render_template("verify_otp.html", need_email=need_email, email=pending_email)
+        finally:
+            if connection is not None:
+                connection.close()
+
+    return render_template("verify_otp.html", need_email=need_email, email=pending_email)
 
     return render_template("login.html")
 
@@ -270,6 +383,10 @@ def login():
 def dashboard():
     connection = None
     cursor = None
+    recent_analyses = []
+    recent_measurements = []
+    analyses_count = 0
+    measurements_count = 0
 
     try:
         connection = get_connection()
@@ -278,13 +395,63 @@ def dashboard():
         # Derive the PID from the logged-in account, never from a URL.
         cursor.execute(
             """
-            SELECT full_name, global_pid
+            SELECT patient_id, full_name, global_pid
             FROM patients
             WHERE user_id = %s
             """,
             (session["user_id"],),
         )
         patient = cursor.fetchone()
+
+        if patient is not None:
+            patient_id = patient["patient_id"]
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM medical_documents
+                WHERE patient_id = %s
+                """,
+                (patient_id,)
+            )
+            doc_res = cursor.fetchone()
+            analyses_count = doc_res["count"] if doc_res else 0
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM health_measurements
+                WHERE patient_id = %s
+                """,
+                (patient_id,)
+            )
+            meas_res = cursor.fetchone()
+            measurements_count = meas_res["count"] if meas_res else 0
+
+            cursor.execute(
+                """
+                SELECT a.analysis_id, d.internal_reference, a.risk_score, a.risk_level, a.review_status, d.created_at
+                FROM analysis_results a
+                JOIN medical_documents d ON a.document_id = d.document_id
+                WHERE d.patient_id = %s
+                ORDER BY d.created_at DESC
+                LIMIT 3
+                """,
+                (patient_id,)
+            )
+            recent_analyses = cursor.fetchall()
+
+            cursor.execute(
+                """
+                SELECT measurement_type, value, secondary_value, unit, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s
+                ORDER BY recorded_at DESC
+                LIMIT 4
+                """,
+                (patient_id,)
+            )
+            recent_measurements = cursor.fetchall()
 
     except mysql.connector.Error:
         app.logger.exception("Database error loading patient dashboard")
@@ -304,7 +471,11 @@ def dashboard():
         full_name=patient["full_name"],
         username=session["username"],
         global_pid=patient["global_pid"],
-)
+        analyses_count=analyses_count,
+        measurements_count=measurements_count,
+        recent_analyses=recent_analyses,
+        recent_measurements=recent_measurements,
+    )
 
 
 @app.route("/health-manager")
@@ -1484,7 +1655,40 @@ def download_health_history_pdf():
             measurements
         )
 
-        # 6. Return PDF as a download
+        # 6. Deliver PDF (Direct download or Email)
+        delivery_method = (
+            request.args.get("delivery")
+            or request.args.get("delivery_method")
+            or "download"
+        ).strip().lower()
+
+        if delivery_method == "email":
+            cursor.execute(
+                "SELECT email FROM users WHERE user_id = %s",
+                (session["user_id"],)
+            )
+            user_account = cursor.fetchone()
+            patient_email = (user_account.get("email") or "").strip() if user_account else ""
+
+            if not patient_email:
+                flash("No registered email address found for your account.")
+                return redirect(url_for("health_manager"))
+
+            success, send_msg = send_health_report_email(
+                patient_email,
+                patient.get("full_name", "Patient"),
+                temporary_path,
+                report_period="All Time"
+            )
+
+            if success:
+                flash(f"Your Complete Health History has been securely emailed to {patient_email}!")
+            else:
+                flash(f"Report generated, but email delivery encountered an issue: {send_msg}")
+
+            return redirect(url_for("health_manager"))
+
+        # Default: Browser download
         pdf_response = send_file(
             temporary_path,
             mimetype="application/pdf",
@@ -1521,6 +1725,279 @@ def download_health_history_pdf():
 
         if temporary_path and os.path.exists(temporary_path):
             os.remove(temporary_path)
+
+
+@app.route("/health-manager/custom-report/pdf", methods=["GET", "POST"])
+@patient_required
+def download_custom_health_report_pdf():
+    connection = None
+    cursor = None
+    temporary_path = None
+
+    try:
+        # 1. Supported categories whitelist
+        CATEGORY_TYPES = {
+            "blood_sugar": [
+                "blood_sugar_fasting",
+                "blood_sugar_post_meal",
+                "blood_sugar_random",
+                "blood_sugar_hba1c"
+            ],
+            "blood_pressure": ["blood_pressure"],
+            "heart_rate": ["heart_rate"],
+            "weight": ["weight"],
+            "sleep": ["sleep_duration"],
+            "temperature": ["temperature"]
+        }
+
+        # Check POST form first, then GET query parameters
+        submitted_categories = request.form.getlist("categories") or request.args.getlist("categories")
+
+        # Filter strictly against whitelist
+        selected_categories = [
+            cat.strip().lower()
+            for cat in submitted_categories
+            if cat.strip().lower() in CATEGORY_TYPES
+        ]
+
+        # If user selected none, alert and redirect
+        if not selected_categories:
+            flash("Please select at least one health category to generate the report.")
+            return redirect(url_for("health_manager"))
+
+        # 2. Parse date range
+        date_range_preset = (
+            request.form.get("date_range")
+            or request.args.get("date_range")
+            or "last_30_days"
+        ).strip().lower()
+
+        now = datetime.now()
+        start_datetime = None
+        end_datetime = None
+        date_range_label = "Last 30 Days"
+
+        if date_range_preset == "last_7_days":
+            start_datetime = (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+            date_range_label = "Last 7 Days"
+
+        elif date_range_preset == "last_15_days":
+            start_datetime = (now - timedelta(days=15)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+            date_range_label = "Last 15 Days"
+
+        elif date_range_preset == "last_30_days":
+            start_datetime = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+            date_range_label = "Last 30 Days"
+
+        elif date_range_preset == "last_3_months":
+            start_datetime = (now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+            date_range_label = "Last 3 Months"
+
+        elif date_range_preset == "all_time":
+            start_datetime = None
+            end_datetime = None
+            date_range_label = "All Recorded History"
+
+        elif date_range_preset == "custom":
+            start_str = (
+                request.form.get("start_date")
+                or request.args.get("start_date")
+                or ""
+            ).strip()
+            end_str = (
+                request.form.get("end_date")
+                or request.args.get("end_date")
+                or ""
+            ).strip()
+
+            if not start_str or not end_str:
+                flash("Please provide both start and end dates for a custom date range.")
+                return redirect(url_for("health_manager"))
+
+            try:
+                start_datetime = datetime.strptime(start_str, "%Y-%m-%d").replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                end_datetime = datetime.strptime(end_str, "%Y-%m-%d").replace(
+                    hour=23, minute=59, second=59, microsecond=999999
+                )
+            except ValueError:
+                flash("Invalid date format. Please use YYYY-MM-DD.")
+                return redirect(url_for("health_manager"))
+
+            if start_datetime > end_datetime:
+                flash("Start date cannot be later than end date.")
+                return redirect(url_for("health_manager"))
+
+            date_range_label = f"{start_datetime.strftime('%d-%m-%Y')} to {end_datetime.strftime('%d-%m-%Y')}"
+
+        else:
+            start_datetime = (now - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end_datetime = now
+            date_range_label = "Last 30 Days"
+
+        # 3. Connect to database and identify authenticated patient
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT patient_id, full_name, global_pid, date_of_birth
+            FROM patients
+            WHERE user_id = %s
+            """,
+            (session["user_id"],)
+        )
+        patient = cursor.fetchone()
+
+        if patient is None:
+            return "Patient profile not found.", 404
+
+        # 4. Build query for selected categories and date range
+        selected_types = []
+        for cat in selected_categories:
+            selected_types.extend(CATEGORY_TYPES[cat])
+
+        placeholders = ", ".join(["%s"] * len(selected_types))
+        query = f"""
+            SELECT
+                measurement_type,
+                value,
+                secondary_value,
+                unit,
+                context,
+                recorded_at,
+                ended_at,
+                awake_minutes
+            FROM health_measurements
+            WHERE patient_id = %s
+              AND measurement_type IN ({placeholders})
+        """
+        params = [patient["patient_id"]] + selected_types
+
+        if start_datetime and end_datetime:
+            query += " AND recorded_at >= %s AND recorded_at <= %s"
+            params.extend([start_datetime, end_datetime])
+
+        query += " ORDER BY recorded_at ASC, uploaded_at ASC"
+
+        cursor.execute(query, tuple(params))
+        records = cursor.fetchall()
+
+        # 5. Organize records for PDF generator
+        measurements = {
+            "blood_sugar": [],
+            "blood_pressure": [],
+            "heart_rate": [],
+            "weight": [],
+            "sleep": [],
+            "temperature": []
+        }
+
+        measurement_key_map = {
+            "blood_sugar_fasting": "blood_sugar",
+            "blood_sugar_post_meal": "blood_sugar",
+            "blood_sugar_random": "blood_sugar",
+            "blood_sugar_hba1c": "blood_sugar",
+            "blood_pressure": "blood_pressure",
+            "heart_rate": "heart_rate",
+            "weight": "weight",
+            "sleep_duration": "sleep",
+            "temperature": "temperature"
+        }
+
+        for record in records:
+            key = measurement_key_map.get(record["measurement_type"])
+            if key and key in measurements:
+                measurements[key].append(record)
+
+        # 6. Prepare temporary PDF file
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temporary_file:
+            temporary_path = temporary_file.name
+
+        # 7. Generate PDF
+        patient["generated_at"] = datetime.now().strftime("%d-%m-%Y %H:%M")
+        patient["date_range_label"] = date_range_label
+
+        generate_health_history_pdf(
+            temporary_path,
+            patient,
+            measurements,
+            selected_categories=selected_categories,
+            date_range_label=date_range_label
+        )
+
+        # 8. Deliver PDF (Direct download or Email to registered address)
+        delivery_method = (
+            request.form.get("delivery_method")
+            or request.args.get("delivery_method")
+            or "download"
+        ).strip().lower()
+
+        if delivery_method == "email":
+            cursor.execute(
+                "SELECT email FROM users WHERE user_id = %s",
+                (session["user_id"],)
+            )
+            user_account = cursor.fetchone()
+            patient_email = (user_account.get("email") or "").strip() if user_account else ""
+
+            if not patient_email:
+                flash("No registered email address found for your account.")
+                return redirect(url_for("health_manager"))
+
+            success, send_msg = send_health_report_email(
+                patient_email,
+                patient.get("full_name", "Patient"),
+                temporary_path,
+                report_period=date_range_label
+            )
+
+            if success:
+                flash(f"Your Health Report has been securely emailed to {patient_email}!")
+            else:
+                flash(f"Report generated, but email delivery encountered an issue: {send_msg}")
+
+            return redirect(url_for("health_manager"))
+
+        # Default: Browser download
+        pdf_response = send_file(
+            temporary_path,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="MediTrust_Custom_Health_Report.pdf",
+            max_age=0
+        )
+
+        pdf_response.call_on_close(
+            lambda path=temporary_path: (
+                os.remove(path) if os.path.exists(path) else None
+            )
+        )
+
+        temporary_path = None
+        return pdf_response
+
+    except mysql.connector.Error:
+        app.logger.exception("Custom health report database error")
+        return "Unable to fetch health records. Please try again.", 503
+
+    except Exception:
+        app.logger.exception("Custom health report PDF generation error")
+        return "Unable to generate the custom health report PDF.", 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()
+        if temporary_path and os.path.exists(temporary_path):
+            os.remove(temporary_path)
+
 
 @app.route("/my-analyses")
 @patient_required
@@ -1664,6 +2141,216 @@ def analysis_details(analysis_id):
     finally:
         if cursor is not None:
             cursor.close()
+        if connection is not None:
+            connection.close()
+
+
+@app.route("/api/summarize-analysis", methods=["POST"])
+@patient_required
+def api_summarize_analysis():
+    data = request.get_json(silent=True) or {}
+    analysis_id = data.get("analysis_id")
+    extracted_data = data.get("extracted_data")
+
+    connection = None
+    cursor = None
+    try:
+        # If analysis_id provided, fetch extracted_data from database
+        if analysis_id:
+            connection = get_connection()
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT a.extracted_data
+                FROM analysis_results a
+                JOIN medical_documents d ON a.document_id = d.document_id
+                JOIN patients p ON d.patient_id = p.patient_id
+                WHERE a.analysis_id = %s AND p.user_id = %s
+                LIMIT 1
+                """,
+                (analysis_id, session["user_id"])
+            )
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({"success": False, "error": "Analysis record not found."}), 404
+
+            raw_extracted = row["extracted_data"]
+            if isinstance(raw_extracted, str):
+                extracted_data = json.loads(raw_extracted)
+            else:
+                extracted_data = raw_extracted
+
+        if not extracted_data:
+            return jsonify({"success": False, "error": "No extracted report data available to summarize."}), 400
+
+        # Generate summary using Gemini
+        summary = summarize_medical_report(extracted_data)
+        return jsonify({"success": True, "summary": summary})
+
+    except Exception as exc:
+        app.logger.exception("AI summarization error")
+        return jsonify({"success": False, "error": f"Summarization failed: {str(exc)}"}), 500
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()
+
+
+def _fetch_patient_measurements_for_category(connection, patient_id, category, limit=15):
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cat = (category or "").lower()
+        if "pressure" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type = 'blood_pressure'
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        elif "sugar" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type IN ('blood_sugar_fasting', 'blood_sugar_post_meal', 'blood_sugar_random', 'blood_sugar_hba1c')
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        elif "heart" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type = 'heart_rate'
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        elif "weight" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type = 'weight'
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        elif "sleep" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at, awake_minutes
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type = 'sleep_duration'
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        elif "temp" in cat:
+            query = """
+                SELECT measurement_id, measurement_type, value, secondary_value, unit, context, recorded_at
+                FROM health_measurements
+                WHERE patient_id = %s AND measurement_type = 'temperature'
+                ORDER BY recorded_at DESC, uploaded_at DESC
+                LIMIT %s
+            """
+            params = (patient_id, limit)
+        else:
+            return []
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        for r in rows:
+            if isinstance(r.get("recorded_at"), (datetime, date)):
+                r["recorded_at"] = r["recorded_at"].strftime("%Y-%m-%d %H:%M")
+        return rows
+    finally:
+        cursor.close()
+
+
+@app.route("/api/health-insights/generate", methods=["POST"])
+@patient_required
+def api_generate_health_insight():
+    data = request.get_json(silent=True) or {}
+    category = data.get("category", "blood_pressure")
+
+    connection = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT patient_id FROM patients WHERE user_id = %s", (session["user_id"],))
+        patient = cursor.fetchone()
+        cursor.close()
+
+        if not patient:
+            return jsonify({"success": False, "error": "Patient profile not found."}), 404
+
+        patient_id = patient["patient_id"]
+        rows = _fetch_patient_measurements_for_category(connection, patient_id, category, limit=15)
+
+        if not rows:
+            return jsonify({
+                "success": False,
+                "error": "No recorded measurements found for this category. Log your first reading above!"
+            }), 200
+
+        latest = rows[0]
+        history = rows[1:] if len(rows) > 1 else []
+
+        insight = generate_measurement_insight(category, latest, history)
+
+        return jsonify({
+            "success": True,
+            "category": category,
+            "insight": insight,
+            "latest": latest,
+            "history_count": len(history)
+        })
+    except Exception as exc:
+        app.logger.exception("Error generating health insight")
+        return jsonify({"success": False, "error": f"Failed to generate insight: {str(exc)}"}), 500
+    finally:
+        if connection is not None:
+            connection.close()
+
+
+@app.route("/api/health-insights/ask", methods=["POST"])
+@patient_required
+def api_ask_health_insight():
+    data = request.get_json(silent=True) or {}
+    category = data.get("category", "blood_pressure")
+    question = (data.get("question") or "").strip()
+    previous_insight = (data.get("previous_insight") or "").strip()
+
+    if not question:
+        return jsonify({"success": False, "error": "Please provide a question."}), 400
+
+    connection = None
+    try:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT patient_id FROM patients WHERE user_id = %s", (session["user_id"],))
+        patient = cursor.fetchone()
+        cursor.close()
+
+        if not patient:
+            return jsonify({"success": False, "error": "Patient profile not found."}), 404
+
+        patient_id = patient["patient_id"]
+        rows = _fetch_patient_measurements_for_category(connection, patient_id, category, limit=15)
+        latest = rows[0] if rows else None
+        history = rows[1:] if len(rows) > 1 else []
+
+        answer = answer_followup_question(category, latest, history, previous_insight, question)
+
+        return jsonify({
+            "success": True,
+            "answer": answer
+        })
+    except Exception as exc:
+        app.logger.exception("Error answering health question")
+        return jsonify({"success": False, "error": f"Failed to answer question: {str(exc)}"}), 500
+    finally:
         if connection is not None:
             connection.close()
 

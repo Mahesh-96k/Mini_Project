@@ -220,6 +220,125 @@
 
             </section>
 
+            <!-- INTERACTIVE TEMPERATURE CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Body Temperature Trajectory</h2>
+                            <p>Track thermoregulatory patterns against the normal physiological reference range (36.5°C–37.5°C).</p>
+                        </div>
+                        <div>
+                            <span style="font-size: 12px; font-weight: 700; color: #ea580c; background: #ffedd5; padding: 4px 10px; border-radius: 6px;">
+                                ● Temperature (°C)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Clinical Reference: Normal: 36.5°C–37.5°C · Mild Fever: 37.6°C–38.5°C · High Fever: &gt;38.5°C
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No temperature records yet. Log your first reading above to view temperature analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("tempChart");
+                if (!ctx) return;
+
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b %H:%M') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+
+                const tempData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const notesData = [
+                    {% for r in chrono %}"{{ r.context or '' }}"{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "Body Temperature (°C)",
+                                data: tempData,
+                                borderColor: "#ea580c",
+                                backgroundColor: "rgba(234, 88, 12, 0.08)",
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: "#ea580c",
+                                pointRadius: 6,
+                                pointHoverRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const idx = context[0].dataIndex;
+                                        const note = notesData[idx];
+                                        return note ? ("Notes: " + note) : "";
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    usePointStyle: true,
+                                    font: { size: 12, weight: "bold" }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 35.0,
+                                suggestedMax: 40.0,
+                                title: {
+                                    display: true,
+                                    text: "Temperature (°C)",
+                                    font: { weight: "bold", size: 12 }
+                                },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { maxRotation: 45, minRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="temperature"></div>
+            {% include "ai_insight_card.html" %}
+
             <!-- TEMPERATURE INFORMATION -->
             <section class="section-block">
 

@@ -262,6 +262,150 @@
 
             </section>
 
+            <!-- INTERACTIVE BLOOD PRESSURE CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Blood Pressure Trend Analytics</h2>
+                            <p>Interactive chronological trajectory of systolic & diastolic readings with clinical threshold zones.</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #087E75; background: #e6f6f4; padding: 4px 10px; border-radius: 6px;">
+                                ● Systolic (Upper)
+                            </span>
+                            <span style="font-size: 12px; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 4px 10px; border-radius: 6px;">
+                                ● Diastolic (Lower)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="bpChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Threshold Guide: <span style="color: #16a34a; font-weight: 600;">Normal &lt;120/80</span> · <span style="color: #d97706; font-weight: 600;">Elevated 120-129/&lt;80</span> · <span style="color: #dc2626; font-weight: 600;">Hypertension ≥130/≥80</span>
+                            </div>
+                            <div>
+                                Hover over points to inspect timestamps and clinical notes.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No blood pressure measurements recorded yet. Add your first reading above to view trend analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("bpChart");
+                if (!ctx) return;
+
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b %H:%M') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+
+                const systolicData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const diastolicData = [
+                    {% for r in chrono %}{{ r.secondary_value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const notesData = [
+                    {% for r in chrono %}"{{ r.context or '' }}"{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: "Systolic (Upper, mmHg)",
+                                data: systolicData,
+                                borderColor: "#087E75",
+                                backgroundColor: "rgba(8, 126, 117, 0.08)",
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: "#087E75",
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                            },
+                            {
+                                label: "Diastolic (Lower, mmHg)",
+                                data: diastolicData,
+                                borderColor: "#0284c7",
+                                backgroundColor: "rgba(2, 132, 199, 0.06)",
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35,
+                                pointBackgroundColor: "#0284c7",
+                                pointRadius: 5,
+                                pointHoverRadius: 7
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    afterBody: function(context) {
+                                        const index = context[0].dataIndex;
+                                        const note = notesData[index];
+                                        return note ? ("Notes: " + note) : "";
+                                    }
+                                }
+                            },
+                            legend: {
+                                position: "top",
+                                labels: {
+                                    usePointStyle: true,
+                                    font: { size: 12, weight: "bold" }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 40,
+                                suggestedMax: 160,
+                                title: {
+                                    display: true,
+                                    text: "Pressure (mmHg)",
+                                    font: { weight: "bold", size: 12 }
+                                },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { maxRotation: 45, minRotation: 0 }
+                            }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="blood_pressure"></div>
+            {% include "ai_insight_card.html" %}
 
             <!-- BLOOD PRESSURE INFORMATION -->
             <section class="section-block">

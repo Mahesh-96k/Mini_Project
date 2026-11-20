@@ -37,6 +37,34 @@
             color: #4f6969;
             font-size: 13px;
         }
+
+        /* BUFFERING / LOADING OVERLAY STYLES */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); width: 35%; }
+            50% { transform: translateX(80%); width: 60%; }
+            100% { transform: translateX(250%); width: 35%; }
+        }
+        .spinner-ring {
+            width: 100%;
+            height: 100%;
+            border: 4px solid #ccfbf1;
+            border-top-color: #087E75;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .progress-bar-indeterminate {
+            height: 100%;
+            background: linear-gradient(90deg, #087E75, #14b8a6);
+            border-radius: 999px;
+            animation: indeterminate 1.8s infinite ease-in-out;
+        }
     </style>
 </head>
 <body class="auth-page">
@@ -95,5 +123,83 @@
             </a>
         </p>
     </main>
+
+    <!-- FULLSCREEN BUFFERING / LOADING OVERLAY -->
+    <div id="loadingOverlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: white; border-radius: 20px; padding: 36px 32px; max-width: 440px; width: 100%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); animation: popIn 0.3s ease-out;">
+            
+            <!-- Animated Spinner / Pulse -->
+            <div style="position: relative; width: 72px; height: 72px; margin: 0 auto 20px;">
+                <div class="spinner-ring"></div>
+                <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px;">
+                    📄
+                </div>
+            </div>
+
+            <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: #17324D;">Analyzing Document</h3>
+            
+            <!-- Dynamic Status Text -->
+            <div id="loadingStatusText" style="min-height: 48px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #087E75; transition: opacity 0.25s ease; line-height: 1.5; padding: 4px 8px;">
+                Reading and parsing PDF pages...
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin: 18px 0 16px;">
+                <div class="progress-bar-indeterminate"></div>
+            </div>
+
+            <p style="margin: 0; font-size: 12px; color: #64748b;">
+                Our AI models are performing clinical and fraud screening. Please do not close this window.
+            </p>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form");
+        const fileInput = document.querySelector("input[name='report']");
+        const overlay = document.getElementById("loadingOverlay");
+        const statusText = document.getElementById("loadingStatusText");
+        const submitBtn = document.querySelector("button[type='submit']");
+
+        const statusMessages = [
+            "📄 Reading and preprocessing PDF pages...",
+            "🔍 Running Tesseract OCR & extracting medical text...",
+            "🤖 Gemini AI analyzing clinical metrics & laboratory tests...",
+            "⚖ Evaluating biological plausibility & physiological limits...",
+            "🛡 Cross-referencing fraud patterns & chronology...",
+            "✨ Compiling verification findings... almost there!"
+        ];
+
+        if (form) {
+            form.addEventListener("submit", function (e) {
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    return; // Let native HTML validation prompt for file
+                }
+
+                // Show buffering overlay
+                overlay.style.display = "flex";
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "Analyzing Document...";
+                }
+
+                let msgIndex = 0;
+                const interval = setInterval(function () {
+                    msgIndex++;
+                    if (msgIndex < statusMessages.length) {
+                        statusText.style.opacity = 0;
+                        setTimeout(function () {
+                            statusText.textContent = statusMessages[msgIndex];
+                            statusText.style.opacity = 1;
+                        }, 250);
+                    } else {
+                        clearInterval(interval);
+                    }
+                }, 1800);
+            });
+        }
+    });
+    </script>
 </body>
 </html>

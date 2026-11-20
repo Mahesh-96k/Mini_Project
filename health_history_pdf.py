@@ -102,16 +102,36 @@ def add_page_design(canvas, document):
 
     canvas.restoreState()
 
-def generate_health_history_pdf(output_path, patient, measurements):
+def generate_health_history_pdf(output_path, patient, measurements, selected_categories=None, date_range_label=None):
     """
-    Generate a basic patient health history PDF.
+    Generate a patient health history PDF.
 
     patient:
         Dictionary containing patient information.
 
     measurements:
         Dictionary containing health measurement lists.
+
+    selected_categories:
+        Optional collection of category keys to include. Defaults to all.
+
+    date_range_label:
+        Optional label describing the requested time period.
     """
+
+    all_supported_categories = [
+        "blood_sugar",
+        "blood_pressure",
+        "heart_rate",
+        "weight",
+        "sleep",
+        "temperature"
+    ]
+
+    if selected_categories is None:
+        selected_categories = set(all_supported_categories)
+    else:
+        selected_categories = {str(c).lower().strip() for c in selected_categories}
 
     document = SimpleDocTemplate(
         output_path,
@@ -165,11 +185,18 @@ def generate_health_history_pdf(output_path, patient, measurements):
     # PATIENT INFORMATION CARD
     story.append(Paragraph("Patient Information", heading_style))
 
+    report_period = str(
+        date_range_label
+        or patient.get("date_range_label")
+        or "All Recorded History"
+    )
+
     patient_data = [
         ["PATIENT PROFILE", ""],
         ["Patient Name", str(patient.get("full_name") or "Not available")],
         ["Patient ID", str(patient.get("global_pid") or "Not available")],
         ["Date of Birth", str(patient.get("date_of_birth") or "Not available")],
+        ["Report Period", report_period],
         ["Report Generated", str(patient.get("generated_at") or "Not available")]
     ]
 
@@ -223,29 +250,30 @@ def generate_health_history_pdf(output_path, patient, measurements):
     summary_items = []
 
     # Blood Sugar - latest reading for each type
-    sugar_types = {
-        "blood_sugar_fasting": "Blood Sugar - Fasting",
-        "blood_sugar_post_meal": "Blood Sugar - Post-meal",
-        "blood_sugar_random": "Blood Sugar - Random",
-        "blood_sugar_hba1c": "Blood Sugar - HbA1c"
-    }
+    if "blood_sugar" in selected_categories:
+        sugar_types = {
+            "blood_sugar_fasting": "Blood Sugar - Fasting",
+            "blood_sugar_post_meal": "Blood Sugar - Post-meal",
+            "blood_sugar_random": "Blood Sugar - Random",
+            "blood_sugar_hba1c": "Blood Sugar - HbA1c"
+        }
 
-    sugar_records = measurements.get("blood_sugar", [])
+        sugar_records = measurements.get("blood_sugar", [])
 
-    for measurement_type, label in sugar_types.items():
-        matching = [
-            r for r in sugar_records
-            if r.get("measurement_type") == measurement_type
-        ]
+        for measurement_type, label in sugar_types.items():
+            matching = [
+                r for r in sugar_records
+                if r.get("measurement_type") == measurement_type
+            ]
 
-        latest = get_latest(matching)
+            latest = get_latest(matching)
 
-        if latest:
-            summary_items.append((
-                label,
-                str(latest.get("value", "—")),
-                str(latest.get("unit", ""))
-            ))
+            if latest:
+                summary_items.append((
+                    label,
+                    str(latest.get("value", "—")),
+                    str(latest.get("unit", ""))
+                ))
 
     # Other health measurements
     other_metrics = [
@@ -257,6 +285,9 @@ def generate_health_history_pdf(output_path, patient, measurements):
     ]
 
     for label, key, unit in other_metrics:
+        if key not in selected_categories:
+            continue
+
         latest = get_latest(measurements.get(key, []))
 
         if not latest:
@@ -369,13 +400,18 @@ def generate_health_history_pdf(output_path, patient, measurements):
 
     # HEALTH MEASUREMENT SECTIONS
 
-    measurement_sections = [
+    all_measurement_sections = [
         ("Blood Sugar", "blood_sugar"),
         ("Blood Pressure", "blood_pressure"),
         ("Heart Rate", "heart_rate"),
         ("Weight", "weight"),
         ("Sleep Tracking", "sleep"),
         ("Temperature", "temperature")
+    ]
+
+    measurement_sections = [
+        (title, key) for title, key in all_measurement_sections
+        if key in selected_categories
     ]
 
     cell_style = ParagraphStyle(
@@ -546,10 +582,13 @@ def generate_health_history_pdf(output_path, patient, measurements):
 
     story.append(Paragraph("Health Trend Analysis", heading_style))
 
+    charts_drawn = 0
+
     def add_trend_chart(title, records, series_config):
         """
         series_config: list of (label, field, colour)
         """
+        nonlocal charts_drawn
 
         if not records or len(records) < 2:
             return
@@ -656,39 +695,43 @@ def generate_health_history_pdf(output_path, patient, measurements):
             )
         )
 
+        charts_drawn += 1
+
     # Blood Sugar - separate graphs for each type
-    sugar_types = [
-        ("blood_sugar_fasting", "Fasting"),
-        ("blood_sugar_post_meal", "Post-meal"),
-        ("blood_sugar_random", "Random"),
-        ("blood_sugar_hba1c", "HbA1c")
-    ]
-
-    sugar_records = measurements.get("blood_sugar", [])
-
-    for measurement_type, label in sugar_types:
-        matching = [
-            r for r in sugar_records
-            if r.get("measurement_type") == measurement_type
+    if "blood_sugar" in selected_categories:
+        sugar_types = [
+            ("blood_sugar_fasting", "Fasting"),
+            ("blood_sugar_post_meal", "Post-meal"),
+            ("blood_sugar_random", "Random"),
+            ("blood_sugar_hba1c", "HbA1c")
         ]
 
-        add_trend_chart(
-            f"Blood Sugar - {label}",
-            matching,
-            [
-                ("Reading", "value", "#087E75")
+        sugar_records = measurements.get("blood_sugar", [])
+
+        for measurement_type, label in sugar_types:
+            matching = [
+                r for r in sugar_records
+                if r.get("measurement_type") == measurement_type
             ]
-        )
+
+            add_trend_chart(
+                f"Blood Sugar - {label}",
+                matching,
+                [
+                    ("Reading", "value", "#087E75")
+                ]
+            )
 
     # Blood Pressure - two lines in one graph
-    add_trend_chart(
-        "Blood Pressure Trend",
-        measurements.get("blood_pressure", []),
-        [
-            ("Systolic", "value", "#087E75"),
-            ("Diastolic", "secondary_value", "#2563EB")
-        ]
-    )
+    if "blood_pressure" in selected_categories:
+        add_trend_chart(
+            "Blood Pressure Trend",
+            measurements.get("blood_pressure", []),
+            [
+                ("Systolic", "value", "#087E75"),
+                ("Diastolic", "secondary_value", "#2563EB")
+            ]
+        )
 
     # Other health trends
     other_graphs = [
@@ -699,12 +742,21 @@ def generate_health_history_pdf(output_path, patient, measurements):
     ]
 
     for title, key, unit in other_graphs:
-        add_trend_chart(
-            title,
-            measurements.get(key, []),
-            [
-                (unit, "value", "#087E75")
-            ]
+        if key in selected_categories:
+            add_trend_chart(
+                title,
+                measurements.get(key, []),
+                [
+                    (unit, "value", "#087E75")
+                ]
+            )
+
+    if charts_drawn == 0:
+        story.append(
+            Paragraph(
+                "No sufficient readings available to generate trend graphs for this period (minimum 2 readings required per metric).",
+                normal_style
+            )
         )
 
     story.append(Spacer(1, 12))

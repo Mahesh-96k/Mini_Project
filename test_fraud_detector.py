@@ -113,6 +113,39 @@ class FraudDetectorTests(unittest.TestCase):
             "manual_review_required",
         )
 
+    def test_hematology_rule_of_three_discrepancy(self):
+        report = make_report(
+            tests=[
+                {"test_name": "Hemoglobin", "value": 15.0, "unit": "g/dL"},
+                {"test_name": "Hematocrit", "value": 18.0, "unit": "%"}  # Expect ~45%, 18% is severe biological mismatch
+            ]
+        )
+        result = analyze_report(report)
+        reasons = [item["reason"] for item in result["findings"]]
+        self.assertTrue(any("Hematocrit" in r and "Hemoglobin" in r for r in reasons))
+        self.assertGreaterEqual(result["risk_score"], 20)
+
+    def test_lipid_fractions_discrepancy(self):
+        report = make_report(
+            tests=[
+                {"test_name": "Total Cholesterol", "value": 120.0, "unit": "mg/dL"},
+                {"test_name": "HDL Cholesterol", "value": 60.0, "unit": "mg/dL"},
+                {"test_name": "LDL Cholesterol", "value": 90.0, "unit": "mg/dL"}  # HDL + LDL = 150 > Total 120 (biochemically impossible)
+            ]
+        )
+        result = analyze_report(report)
+        reasons = [item["reason"] for item in result["findings"]]
+        self.assertTrue(any("Total Cholesterol" in r and "HDL" in r for r in reasons))
+
+    def test_specimen_date_after_report_date(self):
+        report = make_report(
+            report_date="2026-10-15",
+            collection_date="2026-10-18"  # Sample collected after report generated
+        )
+        result = analyze_report(report)
+        reasons = [item["reason"] for item in result["findings"]]
+        self.assertIn("Specimen collection date is after the report authorization date", reasons)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

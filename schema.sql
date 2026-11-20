@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS hospitals (
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(150) NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('hospital', 'patient', 'authority')
         NOT NULL,
@@ -155,4 +156,20 @@ CREATE TABLE IF NOT EXISTS hospital_id_counters (
     CONSTRAINT chk_next_sequence
         CHECK (next_sequence >= 1)
 );
+
+CREATE TABLE IF NOT EXISTS email_otps (
+    otp_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    otp_code VARCHAR(6) NOT NULL,
+    purpose ENUM('login', 'report_delivery') NOT NULL DEFAULT 'login',
+    expires_at DATETIME NOT NULL,
+    is_used TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_otps_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
 

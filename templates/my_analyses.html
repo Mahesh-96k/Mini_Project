@@ -1,0 +1,378 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Analysis History | MediTrust</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243247;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        .header, .analysis-card {
+            background: white;
+            padding: 24px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 28px;
+        }
+
+        h2 {
+            font-size: 19px;
+            margin: 0;
+        }
+
+        .muted {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            background: #2457d6;
+            color: white;
+            padding: 11px 16px;
+            text-decoration: none;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+
+        .button.secondary {
+            background: #475569;
+        }
+
+        .section-heading {
+            margin: 26px 0 16px;
+        }
+
+        .analysis-card {
+            border-left: 5px solid #64748b;
+        }
+
+        .card-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .analysis-link {
+            color: #2457d6;
+            text-decoration: none;
+        }
+
+        .analysis-link:hover {
+            text-decoration: underline;
+        }
+
+        .reference {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 18px;
+            margin-top: 24px;
+        }
+
+        .detail-box {
+            background: #f8fafc;
+            padding: 14px;
+            border-radius: 9px;
+            min-width: 0;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .value {
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+
+        .risk-low {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .risk-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .risk-high {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .risk-unknown {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .status-badge {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .notice {
+            background: #fff7e6;
+            border: 1px solid #f5dfae;
+            padding: 16px;
+            border-radius: 10px;
+            line-height: 1.6;
+            font-size: 13px;
+            margin-top: 24px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 35px 20px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .header, .analysis-card {
+                padding: 18px;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+        }
+
+        .score-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .score-low {
+            background: #16a34a;
+        }
+
+        .score-medium {
+            background: #d97706;
+        }
+
+        .score-high {
+            background: #dc2626;
+        }
+
+
+    </style>
+</head>
+
+<body>
+    <main class="container">
+
+        <section class="header">
+            <h1>My Analysis History</h1>
+
+            <p class="muted">
+                Review your submitted medical documents and their automated
+                screening results in one place.
+            </p>
+
+            <div class="actions">
+                <a class="button" href="{{ url_for('verify_document') }}">
+                    + Analyze Another Report
+                </a>
+
+                <a class="button secondary" href="{{ url_for('dashboard') }}">
+                    Back to Dashboard
+                </a>
+            </div>
+        </section>
+
+        {% if analyses %}
+            <h2 class="section-heading">
+                Your Reports ({{ analyses|length }})
+            </h2>
+
+            {% for item in analyses %}
+                {% set risk = (item.risk_level or '')|lower|trim %}
+
+                <section class="analysis-card">
+                    <div class="card-heading">
+                        <div>
+                            <h2>
+                                <a class="analysis-link"
+                                   href="{{ url_for(
+                                       'analysis_details',
+                                       analysis_id=item.analysis_id
+                                   ) }}">
+                                    Analysis #{{ item.analysis_id }} →
+                                </a>
+                            </h2>
+
+                            <div class="reference">
+                                MediTrust Reference:
+                                {{ item.internal_reference or "Not available" }}
+                            </div>
+                        </div>
+
+                        <span class="badge
+                            {% if risk == 'low' %}
+                                risk-low
+                            {% elif risk == 'medium' %}
+                                risk-medium
+                            {% elif risk == 'high' %}
+                                risk-high
+                            {% else %}
+                                risk-unknown
+                            {% endif %}">
+                            {{ item.risk_level or "Not assessed" }} Risk
+                        </span>
+                    </div>
+
+                    <div class="details">
+                        <div class="detail-box">
+                            <div class="label">Date Submitted</div>
+                            <div class="value">
+                                {{ item.created_at.strftime('%d-%m-%Y %H:%M')
+                                   if item.created_at else "Not available" }}
+                            </div>
+                        </div>
+
+                        <div class="detail-box">
+                        
+                        <div class="label">Risk Score</div>
+
+                        <div class="value">
+                            {{ item.risk_score }}/100
+                        </div>
+
+                                                
+                        <div class="score-bar">
+                            <div
+                                class="score-fill
+                                    {% if (item.risk_score|int) < 20 %}score-low
+                                    {% elif (item.risk_score|int) < 50 %}score-medium
+                                    {% else %}score-high{% endif %}"
+                                    data-score="{{ item.risk_score|int }}">
+                            </div>
+                        </div>
+
+                        
+
+
+
+
+                        </div>
+
+                        <div class="detail-box">
+                            <div class="label">Review Status</div>
+                            <div class="value">
+                                <span class="badge status-badge">
+                                    {{ item.review_status or "Not available" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <a class="button"
+                           href="{{ url_for(
+                               'analysis_details',
+                               analysis_id=item.analysis_id
+                           ) }}">
+                            View Analysis Details
+                        </a>
+                    </div>
+                </section>
+            {% endfor %}
+
+        {% else %}
+            <section class="analysis-card empty-state">
+                <h2>No analyses yet</h2>
+
+                <p class="muted">
+                    Once you analyze a medical report, its history will
+                    appear here.
+                </p>
+
+                <a class="button" href="{{ url_for('verify_document') }}">
+                    Analyze Your First Report
+                </a>
+            </section>
+        {% endif %}
+
+        <p class="notice">
+            <strong>Important:</strong> Risk scores and levels are automated
+            screening indicators, not proof that a medical report is genuine
+            or fraudulent. Results may require review by an authorized
+            professional. A low risk score does not guarantee authenticity.
+        </p>
+
+    </main>
+</body>
+<script>
+document.querySelectorAll(".score-fill").forEach(function (bar) {
+    const score = Number(bar.dataset.score);
+
+    if (Number.isFinite(score)) {
+        bar.style.width = Math.max(0, Math.min(score, 100)) + "%";
+    }
+});
+</script>
+</html>
+```

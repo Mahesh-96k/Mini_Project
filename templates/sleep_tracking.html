@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Tracking | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="dashboard-page">
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <a class="sidebar-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> PATIENT PORTAL</small></span>
+        </a>
+
+        <p class="nav-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link" href="{{ url_for('dashboard') }}">⌂ Dashboard</a>
+            <a class="nav-link" href="{{ url_for('health_manager') }}">♥ Health Manager</a>
+            <a class="nav-link" href="{{ url_for('blood_sugar') }}">◉ Blood Sugar</a>
+            <a class="nav-link" href="{{ url_for('blood_pressure') }}">♥ Blood Pressure</a>
+            <a class="nav-link" href="{{ url_for('heart_rate') }}">♥ Heart Rate</a>
+            <a class="nav-link" href="{{ url_for('weight_tracking') }}">⚖ Weight Tracking</a>
+            <a class="nav-link active" href="{{ url_for('sleep_tracking') }}">☾ Sleep Tracking</a>
+            <a class="nav-link" href="{{ url_for('verify_document') }}">✓ Verify a Document</a>
+            <a class="nav-link" href="{{ url_for('my_analyses') }}">◷ Analysis History</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <p class="nav-heading">YOUR ACCOUNT</p>
+
+            <div class="sidebar-help">
+                <div class="help-icon">i</div>
+                <strong>Your privacy matters</strong>
+                <p>Your health information should only be accessible to authorized users.</p>
+            </div>
+
+            <form method="post" action="{{ url_for('logout') }}">
+                <button class="logout-button" type="submit">
+                    Sign out
+                </button>
+            </form>
+
+        </div>
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+
+        <header class="topbar">
+            <div>
+                <span class="topbar-label">PERSONAL HEALTH MANAGEMENT</span>
+                <p class="topbar-title">Sleep Tracking</p>
+            </div>
+        </header>
+
+
+        <div class="dashboard-content">
+
+            <!-- WELCOME SECTION -->
+            <section class="welcome-banner">
+                <div class="welcome-copy">
+                    <span class="welcome-tag">SLEEP TRACKING</span>
+
+                    <h1>Sleep Duration</h1>
+
+                    <p>
+                        Maintain your sleep records and understand
+                        how your sleep duration changes over time.
+                    </p>
+                </div>
+            </section>
+
+
+
+            <!-- ADD SLEEP SESSION FORM -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Record Sleep Session</h2>
+                        <p>Enter your sleep and wake-up times. MediTrust will calculate your sleep duration and efficiency.</p>
+                    </div>
+                </div>
+
+                {% for message in get_flashed_messages() %}
+                    <p style="color: #087e75; font-weight: bold;">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+
+                <form method="POST" class="feature-card">
+
+                    <label for="sleep_start">Sleep Start Date and Time</label>
+                    <input
+                        type="datetime-local"
+                        id="sleep_start"
+                        name="sleep_start"
+                        max="{{ max_datetime }}"
+                        required
+                    >
+
+                    <br><br>
+
+                    <label for="wake_up">Wake-up Date and Time</label>
+                    <input
+                        type="datetime-local"
+                        id="wake_up"
+                        name="wake_up"
+                        max="{{ max_datetime }}"
+                        required
+                    >
+
+                    <br><br>
+
+                    <label for="awake_minutes">Total Time Awake During the Night (Minutes)</label>
+                    <input
+                        type="number"
+                        id="awake_minutes"
+                        name="awake_minutes"
+                        min="0"
+                        max="1439"
+                        value="0"
+                        required
+                        placeholder="Example: 20"
+                    >
+
+                    <small style="color: #64748b;">
+                        Enter the estimated total minutes you were awake after initially falling asleep.
+                    </small>
+
+                    <br><br>
+
+                    <label for="context">Additional Notes (Optional)</label>
+                    <input
+                        type="text"
+                        id="context"
+                        name="context"
+                        maxlength="50"
+                        placeholder="Example: Disturbed sleep"
+                    >
+
+                    <br><br>
+
+                    <button type="submit" class="button button-primary">
+                        Save Sleep Session
+                    </button>
+
+                </form>
+
+            </section>
+
+
+
+            <!-- SLEEP SUMMARY -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Sleep Summary</h2>
+                        <p>Your latest sleep duration, efficiency and estimated sleep indicator.</p>
+                    </div>
+                </div>
+
+                <div class="health-summary-grid">
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">LATEST SLEEP DURATION</span>
+                        {% if latest %}
+                            <strong class="summary-value">
+                                {{ "%.2f"|format(latest.value) }}
+                                <small>hours</small>
+                            </strong>
+                            <span class="summary-date">{{ latest.recorded_at }}</span>
+                        {% else %}
+                            <strong class="summary-empty">No record yet</strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">SLEEP EFFICIENCY</span>
+                        {% if latest and latest.secondary_value is not none %}
+                            <strong class="summary-value">
+                                {{ "%.1f"|format(latest.secondary_value) }}
+                                <small>%</small>
+                            </strong>
+                            <span class="summary-date">Latest session</span>
+                        {% else %}
+                            <strong class="summary-empty">Not available</strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">ESTIMATED SLEEP INDICATOR</span>
+                        {% if latest %}
+                            <strong class="summary-value">
+                                {{ latest.sleep_quality }}
+                            </strong>
+                            <span class="summary-date">Based on duration and efficiency</span>
+                        {% else %}
+                            <strong class="summary-empty">Not available</strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="health-summary-card">
+                        <span class="summary-label">PREVIOUS SLEEP DURATION</span>
+                        {% if previous %}
+                            <strong class="summary-value">
+                                {{ "%.2f"|format(previous.value) }}
+                                <small>hours</small>
+                            </strong>
+                            <span class="summary-date">{{ previous.recorded_at }}</span>
+                        {% else %}
+                            <strong class="summary-empty">No previous record</strong>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- INTERACTIVE SLEEP CHART -->
+            <section class="section-block" style="margin-top: 24px;">
+                <div class="section-heading">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Sleep Duration & Efficiency Analytics</h2>
+                            <p>Visualizing hours of sleep and calculated rest efficiency across sessions.</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 4px 10px; border-radius: 6px;">
+                                ■ Sleep Duration (Hours)
+                            </span>
+                            <span style="font-size: 12px; font-weight: 700; color: #047857; background: #d1fae5; padding: 4px 10px; border-radius: 6px;">
+                                ● Sleep Efficiency (%)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    {% if measurements and measurements|length > 0 %}
+                        <div style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="sleepChart"></canvas>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 12px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 10px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                Clinical Benchmark: 7–9 hours recommended for adults with &gt;85% sleep efficiency.
+                            </div>
+                        </div>
+                    {% else %}
+                        <div style="text-align: center; padding: 30px; color: #64748b;">
+                            No sleep sessions logged yet. Log your first sleep record above to view rest analytics.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <script src="{{ url_for('static', filename='chart.umd.js') }}"></script>
+            <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const ctx = document.getElementById("sleepChart");
+                if (!ctx) return;
+
+                {% set chrono = measurements|reverse|list %}
+                const labels = [
+                    {% for r in chrono %}
+                        "{{ r.recorded_at.strftime('%d %b') if r.recorded_at is mapping or r.recorded_at.__class__.__name__ == 'datetime' else r.recorded_at }}"{% if not loop.last %},{% endif %}
+                    {% endfor %}
+                ];
+
+                const durationData = [
+                    {% for r in chrono %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                const efficiencyData = [
+                    {% for r in chrono %}{{ r.secondary_value or 0 }}{% if not loop.last %},{% endif %}{% endfor %}
+                ];
+
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                type: "bar",
+                                label: "Sleep Duration (Hours)",
+                                data: durationData,
+                                backgroundColor: "rgba(30, 64, 175, 0.75)",
+                                borderRadius: 6,
+                                yAxisID: "y"
+                            },
+                            {
+                                type: "line",
+                                label: "Efficiency (%)",
+                                data: efficiencyData,
+                                borderColor: "#10b981",
+                                backgroundColor: "#10b981",
+                                borderWidth: 2.5,
+                                tension: 0.3,
+                                pointRadius: 5,
+                                yAxisID: "y1"
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: "top",
+                                labels: { font: { weight: "bold" } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                min: 0,
+                                suggestedMax: 12,
+                                title: { display: true, text: "Hours", font: { weight: "bold" } },
+                                grid: { color: "#f1f5f9" }
+                            },
+                            y1: {
+                                min: 0,
+                                max: 100,
+                                position: "right",
+                                title: { display: true, text: "Efficiency (%)", font: { weight: "bold" } },
+                                grid: { display: false }
+                            },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            });
+            </script>
+
+            <div id="aiInsightConfig" data-category="sleep"></div>
+            {% include "ai_insight_card.html" %}
+
+            <!-- SLEEP INFORMATION -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Understanding Sleep Tracking</h2>
+                        <p>Why monitoring sleep duration matters.</p>
+                    </div>
+                </div>
+
+                <div class="feature-card">
+
+                    <h3>Why track sleep?</h3>
+
+                    <p>
+                        Sleep is important for physical health,
+                        mental well-being and daily functioning.
+                    </p>
+
+                    <br>
+
+                    <h3>Recommended Sleep Duration</h3>
+
+                    <p>
+                        Adults generally need at least 7 hours of
+                        sleep per night, although individual needs vary.
+                    </p>
+
+                    <br>
+
+                    <p style="color: #64748b; font-size: 13px;">
+                        Sleep duration alone does not measure sleep quality
+                        or diagnose a sleep disorder.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- SLEEP HISTORY -->
+            <section class="section-block">
+
+                <div class="section-heading">
+                    <div>
+                        <h2>Sleep History</h2>
+                        <p>Your recorded sleep sessions and automatically calculated indicators.</p>
+                    </div>
+                </div>
+
+                {% if measurements %}
+
+                    <div class="health-table-wrap">
+                        <table class="health-table">
+
+                            <thead>
+                                <tr>
+                                    <th>Sleep Duration</th>
+                                    <th>Sleep Start</th>
+                                    <th>Wake-up Time</th>
+                                    <th>Awake Minutes</th>
+                                    <th>Efficiency</th>
+                                    <th>Estimated Quality</th>
+                                    <th>Uploaded At</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for record in measurements %}
+                                    <tr>
+
+                                        <td>
+                                            <strong class="measurement-value">
+                                                {{ "%.2f"|format(record.value) }} hours
+                                            </strong>
+                                        </td>
+
+                                        <td>{{ record.recorded_at }}</td>
+
+                                        <td>{{ record.ended_at }}</td>
+
+                                        <td>{{ record.awake_minutes }} min</td>
+
+                                        <td>
+                                            {% if record.secondary_value is not none %}
+                                                {{ "%.1f"|format(record.secondary_value) }}%
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            <strong>{{ record.sleep_quality }}</strong>
+                                        </td>
+
+                                        <td>{{ record.uploaded_at }}</td>
+
+                                        <td>
+                                            <form method="POST"
+                                                action="{{ url_for('delete_sleep', measurement_id=record.measurement_id) }}"
+                                                onsubmit="return confirm('Are you sure you want to delete this sleep record?');">
+
+                                                <button type="submit" class="delete-record-btn">
+                                                    Delete
+                                                </button>
+
+                                            </form>
+                                        </td>
+
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                {% else %}
+
+                    <div class="feature-card">
+                        <h3>No sleep records yet</h3>
+                        <p>Your saved sleep sessions will appear here.</p>
+                    </div>
+
+                {% endif %}
+
+            </section>
+
+
+
+
+            <!-- FOOTER -->
+            <footer class="dashboard-footer">
+                <span>© 2026 MediTrust · Development version</span>
+                <span>Measurements are records, not a medical diagnosis.</span>
+            </footer>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

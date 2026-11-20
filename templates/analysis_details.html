@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analysis Details #{{ analysis.analysis_id }} | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        :root {
+            --primary: #087E75;
+            --primary-dark: #0f766e;
+            --primary-light: #f0fdfa;
+            --primary-border: #ccfbf1;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --success: #10b981;
+            --success-bg: #dcfce7;
+            --card-bg: #ffffff;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+        }
+
+        body.auth-page {
+            background: #f1f5f9;
+            padding: 24px 16px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        .report-workspace {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* TOP BRANDING BAR */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .top-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 20px;
+        }
+        .brand-pill {
+            background: var(--primary);
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        /* HERO CARD WITH RISK GAUGE */
+        .hero-banner {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-lg);
+            padding: 24px 28px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 24px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .hero-banner {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        .hero-title-area h1 {
+            margin: 4px 0 8px;
+            font-size: 24px;
+            color: var(--text-dark);
+            font-weight: 800;
+        }
+
+        .doc-meta-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .meta-chip {
+            background: #e2e8f0;
+            color: #334155;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .meta-chip.primary {
+            background: #e6f6f4;
+            color: var(--primary);
+        }
+
+        /* CIRCULAR SCORE GAUGE */
+        .gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 170px;
+        }
+        .gauge-circle {
+            position: relative;
+            width: 110px;
+            height: 110px;
+        }
+        .gauge-circle svg {
+            transform: rotate(-90deg);
+        }
+        .gauge-circle circle {
+            fill: none;
+            stroke-width: 9;
+            stroke-linecap: round;
+        }
+        .gauge-bg {
+            stroke: #e2e8f0;
+        }
+        .gauge-fill {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        .gauge-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .gauge-score {
+            font-size: 26px;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .gauge-max {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .gauge-status-badge {
+            margin-top: 8px;
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 4 KPI TILES */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            transition: transform 0.15s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: #cbd5e1;
+        }
+        .kpi-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .kpi-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-top: 2px;
+        }
+        .kpi-sub {
+            font-size: 11.5px;
+            font-weight: 600;
+            margin-top: 1px;
+        }
+
+        /* INTERACTIVE TAB SYSTEM */
+        .tabs-header {
+            display: flex;
+            gap: 8px;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover {
+            color: var(--text-dark);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .tab-btn.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .tab-count-badge {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+        .tab-btn.active .tab-count-badge {
+            background: #e6f6f4;
+            color: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* TAB 1: LAB TESTS INTERACTIVE CONTROLS */
+        .tests-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 14px;
+            background: white;
+            padding: 14px 18px;
+            border-radius: var(--radius-md);
+            border: 1px solid #e2e8f0;
+        }
+        .tests-search-box {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+        }
+        .tests-search-box input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 12px 8px 34px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 13.5px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .tests-search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(8, 126, 117, 0.1);
+        }
+        .tests-search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .filter-chip-group {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-chip {
+            border: 1px solid #cbd5e1;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #475569;
+            transition: all 0.15s;
+        }
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* LAB RESULTS TABLE */
+        .table-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .lab-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+            text-align: left;
+        }
+        .lab-table thead {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .lab-table th {
+            padding: 12px 16px;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            font-size: 11.5px;
+            letter-spacing: 0.5px;
+        }
+        .lab-table td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .lab-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        /* FLAG PILLS */
+        .flag-pill {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .flag-high { background: var(--danger-bg); color: #991b1b; border: 1px solid #fca5a5; }
+        .flag-low { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; }
+        .flag-normal { background: var(--success-bg); color: #166534; border: 1px solid #bbf7d0; }
+        .flag-other { background: #f1f5f9; color: #475569; }
+
+        /* TAB 2: AUDIT FINDINGS */
+        .findings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .audit-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+            border-left: 5px solid var(--warning);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .audit-card.high-severity {
+            border-left-color: var(--danger);
+        }
+        .audit-tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #e6f6f4;
+            color: var(--primary);
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .audit-reason {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.5;
+            margin: 0;
+        }
+        .audit-points {
+            white-space: nowrap;
+            background: var(--warning-bg);
+            color: #92400e;
+            font-size: 12.5px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #fde68a;
+        }
+        .audit-points.high {
+            background: var(--danger-bg);
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+
+        /* TAB 3: METADATA GRID */
+        .meta-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .meta-item {
+            background: #f8fafc;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+        }
+        .meta-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .meta-value {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--text-dark);
+            overflow-wrap: break-word;
+        }
+
+        /* TAB 4: AI EXECUTIVE SUMMARY WITH TYPEWRITER */
+        .ai-summary-card {
+            background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+            border: 1px solid var(--primary-border);
+            border-radius: var(--radius-lg);
+            padding: 26px;
+            box-shadow: 0 4px 14px rgba(8, 126, 117, 0.06);
+        }
+        .ai-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .ai-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ai-title-wrap .icon {
+            font-size: 26px;
+        }
+        .ai-prompt-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(8, 126, 117, 0.25);
+        }
+        .ai-prompt-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        .ai-prompt-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* TYPEWRITER STREAMING BOX */
+        .typewriter-box {
+            background: white;
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px 24px;
+            font-size: 14.5px;
+            line-height: 1.8;
+            color: #1e293b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            white-space: pre-wrap;
+            min-height: 80px;
+            position: relative;
+        }
+        .typing-cursor {
+            display: inline-block;
+            font-weight: 900;
+            color: var(--primary);
+            animation: blink 0.8s infinite;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .thinking-indicator {
+            display: none;
+            padding: 20px;
+            text-align: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .thinking-dots {
+            display: inline-flex;
+            gap: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: bounce 1.2s infinite ease-in-out;
+        }
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ACTIONS FOOTER */
+        .workspace-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #cbd5e1;
+        }
+        .btn-secondary {
+            background: white;
+            border: 1px solid #cbd5e1;
+            padding: 9px 16px;
+            border-radius: 8px;
+            color: #334155;
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 13.5px;
+            transition: all 0.15s;
+        }
+        .btn-secondary:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="auth-page">
+
+<div class="report-workspace">
+
+    <!-- TOP BAR -->
+    <header class="top-nav">
+        <a href="{{ url_for('dashboard') }}" class="top-brand">
+            <span class="brand-pill">M</span>
+            <span>MediTrust<small style="font-size: 12px; font-weight: 600; color: #64748b; margin-left: 6px;">ANALYSIS DETAILS</small></span>
+        </a>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('my_analyses') }}" class="btn-secondary">
+                ← Back to History
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary">
+                ⌂ Dashboard
+            </a>
+        </div>
+    </header>
+
+    {% set extracted = analysis.get('extracted_data') or {} %}
+    {% set tests = extracted.get('tests', []) %}
+    {% set findings = analysis.get('findings') or [] %}
+    {% set risk_score = analysis.get('risk_score', 0)|int %}
+    {% set risk_level = analysis.get('risk_level', 'Low') %}
+    {% set review_status = analysis.get('review_status', 'Verified') %}
+
+    <!-- HERO DASHBOARD BANNER -->
+    <section class="hero-banner">
+        <div class="hero-title-area">
+            <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--primary);">
+                ARCHIVED ANALYSIS RECORD #{{ analysis.analysis_id }}
+            </span>
+            <h1>{{ extracted.get('hospital_name') or 'Laboratory Diagnostic Report' }}</h1>
+            <p style="margin: 0; color: #475569; font-size: 14px;">
+                Subject: <strong>{{ extracted.get('patient_name') or 'Patient (Not identified)' }}</strong> · Submitted: <em>{{ analysis.created_at.strftime('%d-%m-%Y %H:%M') if analysis.created_at else 'N/A' }}</em>
+            </p>
+
+            <div class="doc-meta-chips">
+                {% if analysis.internal_reference %}
+                    <span class="meta-chip primary">
+                        <span>🏷</span> {{ analysis.internal_reference }}
+                    </span>
+                {% endif %}
+                <span class="meta-chip">
+                    <span>📅</span> Report Date: {{ extracted.get('report_date') or 'Undated' }}
+                </span>
+                <span class="meta-chip">
+                    <span>🩺</span> Doctor: {{ extracted.get('doctor_name') or 'Not Specified' }}
+                </span>
+                <span class="meta-chip">
+                    <span>🛡️</span> Patient-Submitted Record
+                </span>
+            </div>
+        </div>
+
+        <!-- RADIAL GAUGE -->
+        <div class="gauge-container">
+            <div class="gauge-circle">
+                <svg width="110" height="110" viewBox="0 0 100 100">
+                    <circle class="gauge-bg" cx="50" cy="50" r="42"></circle>
+                    <circle class="gauge-fill" cx="50" cy="50" r="42"
+                        stroke="{% if risk_score >= 60 %}#ef4444{% elif risk_score >= 30 %}#f59e0b{% else %}#10b981{% endif %}"
+                        stroke-dasharray="264"
+                        stroke-dashoffset="{{ 264 - (risk_score / 100 * 264) }}">
+                    </circle>
+                </svg>
+                <div class="gauge-center-text">
+                    <div class="gauge-score" style="color: {% if risk_score >= 60 %}#ef4444{% elif risk_score >= 30 %}#f59e0b{% else %}#10b981{% endif %};">
+                        {{ risk_score }}
+                    </div>
+                    <div class="gauge-max">/ 100</div>
+                </div>
+            </div>
+            <div class="gauge-status-badge" style="background: {% if risk_score >= 60 %}var(--danger-bg); color: #991b1b;{% elif risk_score >= 30 %}var(--warning-bg); color: #92400e;{% else %}var(--success-bg); color: #166534;{% endif %};">
+                {{ risk_level }} Risk
+            </div>
+        </div>
+    </section>
+
+    <!-- 4 KPI TILES -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: #e6f6f4; color: var(--primary);">
+                🧪
+            </div>
+            <div>
+                <div class="kpi-label">Extracted Tests</div>
+                <div class="kpi-value">{{ tests|length }}</div>
+                {% set abnormal_count = tests | selectattr('interpretation', 'in', ['High', 'Low', 'Abnormal']) | list | length %}
+                <div class="kpi-sub" style="color: {% if abnormal_count > 0 %}#b91c1c{% else %}#166534{% endif %};">
+                    {{ abnormal_count }} Out-of-Range
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: {% if risk_score >= 60 %}var(--danger-bg); color: var(--danger);{% elif risk_score >= 30 %}var(--warning-bg); color: var(--warning);{% else %}var(--success-bg); color: var(--success);{% endif %};">
+                🛡️
+            </div>
+            <div>
+                <div class="kpi-label">Audit Review Status</div>
+                <div class="kpi-value" style="font-size: 15px;">{{ review_status | replace('_', ' ') | title }}</div>
+                <div class="kpi-sub" style="color: var(--text-muted);">
+                    {{ findings|length }} Screening Flags
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: #eff6ff; color: #2563eb;">
+                📋
+            </div>
+            <div>
+                <div class="kpi-label">Completeness</div>
+                {% set missing = extracted.get('missing_fields', []) %}
+                <div class="kpi-value" style="font-size: 15px;">
+                    {% if missing %}{{ missing|length }} Missing Field(s){% else %}Complete{% endif %}
+                </div>
+                <div class="kpi-sub" style="color: var(--text-muted);">
+                    Report # {{ extracted.get('report_number') or 'N/A' }}
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: #faf5ff; color: #9333ea;">
+                ✨
+            </div>
+            <div>
+                <div class="kpi-label">AI Intelligence</div>
+                <div class="kpi-value" style="font-size: 15px;">Gemini 2.5 Flash</div>
+                <div class="kpi-sub" style="color: var(--primary); cursor: pointer;" onclick="switchTab('tab-ai-summary')">
+                    Summarize Report ➜
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERACTIVE TAB HEADERS -->
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="switchTab('tab-tests')" id="btn-tab-tests">
+            <span>🧪</span> Extracted Tests
+            <span class="tab-count-badge">{{ tests|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-fraud')" id="btn-tab-fraud">
+            <span>🛡️</span> Fraud Screening & Audit
+            <span class="tab-count-badge">{{ findings|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-meta')" id="btn-tab-meta">
+            <span>📋</span> Metadata & Hospital Access
+        </button>
+        <button class="tab-btn" onclick="switchTab('tab-ai-summary')" id="btn-tab-ai-summary">
+            <span>✨</span> AI Clinical Summary
+            <span class="tab-count-badge" style="background: #d1fae5; color: #065f46;">Interactive</span>
+        </button>
+    </div>
+
+    <!-- TAB 1: LAB RESULTS TABLE WITH INTERACTIVE SEARCH & FILTERS -->
+    <div class="tab-pane active" id="tab-tests">
+        <div class="tests-toolbar">
+            <div class="tests-search-box">
+                <span class="tests-search-icon">🔍</span>
+                <input type="text" id="testSearchInput" placeholder="Search test name (e.g. ALT, Bilirubin, Urea, Creatinine)...">
+            </div>
+            <div class="filter-chip-group">
+                <button class="filter-chip active" onclick="filterTests('all', this)">All ({{ tests|length }})</button>
+                <button class="filter-chip" onclick="filterTests('abnormal', this)">⚠️ Abnormal Only ({{ abnormal_count }})</button>
+                <button class="filter-chip" onclick="filterTests('normal', this)">✅ Normal ({{ tests|length - abnormal_count }})</button>
+            </div>
+        </div>
+
+        <div class="table-card">
+            {% if tests and tests|length > 0 %}
+                <table class="lab-table" id="labTestsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Test Parameter</th>
+                            <th style="width: 25%;">Observed Value</th>
+                            <th style="width: 25%;">Standard Reference Interval</th>
+                            <th style="width: 15%; text-align: center;">Clinical Flag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in tests %}
+                            {% set interp = t.get('interpretation', 'Normal') %}
+                            <tr class="test-row" data-flag="{{ interp|lower }}" data-name="{{ t.get('test_name', '')|lower }}">
+                                <td>
+                                    <strong style="color: #1e293b;">{{ t.get('test_name', 'Test') }}</strong>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 800; color: var(--primary); font-size: 14.5px;">
+                                        {{ t.get('value', '—') }}
+                                    </span>
+                                    <span style="color: #64748b; font-size: 12px; margin-left: 2px;">{{ t.get('unit', '') }}</span>
+                                </td>
+                                <td style="color: #64748b; font-size: 13px;">
+                                    {{ t.get('reference_range') or 'Standard Reference Range' }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if interp == 'High' or interp == 'Abnormal' %}
+                                        <span class="flag-pill flag-high">{{ interp }}</span>
+                                    {% elif interp == 'Low' %}
+                                        <span class="flag-pill flag-low">{{ interp }}</span>
+                                    {% elif interp == 'Normal' %}
+                                        <span class="flag-pill flag-normal">{{ interp }}</span>
+                                    {% else %}
+                                        <span class="flag-pill flag-other">{{ interp }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% elif extracted.get('test_result') is mapping %}
+                <div style="padding: 20px;">
+                    <table class="lab-table">
+                        <thead>
+                            <tr>
+                                <th>Test Parameter</th>
+                                <th>Observed Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, val in extracted.get('test_result').items() %}
+                                <tr>
+                                    <td><strong>{{ key }}</strong></td>
+                                    <td>{{ val or 'N/A' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 30px; text-align: center; color: var(--text-muted);">
+                    No laboratory test rows extracted from this document.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TAB 2: FRAUD SCREENING & AUDIT BREAKDOWN -->
+    <div class="tab-pane" id="tab-fraud">
+        <div class="findings-list">
+            {% if findings and findings|length > 0 %}
+                {% for finding in findings %}
+                    {% set is_high = (finding.get('severity') == 'high' or (finding.get('points') and finding.get('points') >= 20)) %}
+                    <div class="audit-card {% if is_high %}high-severity{% endif %}">
+                        <div>
+                            <span class="audit-tag">{{ finding.get('check', 'Screening Check') }}</span>
+                            <p class="audit-reason">{{ finding.get('reason', finding.get('message', finding)) }}</p>
+                        </div>
+                        {% if finding.get('points') is not none %}
+                            <div class="audit-points {% if is_high %}high{% endif %}">
+                                +{{ finding.get('points') }} pts penalty
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="audit-card" style="border-left-color: var(--success);">
+                    <div>
+                        <span class="audit-tag" style="background: var(--success-bg); color: #166534;">Verified Clean</span>
+                        <p class="audit-reason">No fraudulent discrepancies, arithmetic contradictions, or chronological anomalies detected.</p>
+                    </div>
+                    <div class="audit-points" style="background: var(--success-bg); color: #166534; border-color: #bbf7d0;">
+                        0 pts penalty
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TAB 3: REPORT METADATA & HOSPITAL ACCESS -->
+    <div class="tab-pane" id="tab-meta">
+        <div class="meta-card">
+            <h3 style="margin-top: 0; font-size: 16px; color: var(--primary); border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 16px;">
+                Patient & Medical Institution Information
+            </h3>
+            <div class="meta-grid">
+                <div class="meta-item">
+                    <div class="meta-label">Patient Name</div>
+                    <div class="meta-value">{{ extracted.get('patient_name') or 'Not Detected' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Patient ID</div>
+                    <div class="meta-value">
+                        {% if extracted.get('patient_id') %}
+                            {{ extracted.get('patient_id') }}
+                        {% else %}
+                            <span style="color: #b91c1c; font-weight: 600;">⚠️ Missing in Document</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Hospital / Laboratory</div>
+                    <div class="meta-value">{{ extracted.get('hospital_name') or 'Not Detected' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Report Number</div>
+                    <div class="meta-value">{{ extracted.get('report_number') or 'Not Detected' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Report Issue Date</div>
+                    <div class="meta-value">{{ extracted.get('report_date') or 'Not Detected' }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Attending Doctor</div>
+                    <div class="meta-value">{{ extracted.get('doctor_name') or 'Not Detected' }}</div>
+                </div>
+            </div>
+
+            {% if extracted.get('missing_fields') %}
+                <div style="margin-top: 20px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px 16px;">
+                    <strong style="color: #b45309; font-size: 13px;">⚠️ Missing Standard Attributes:</strong>
+                    <span style="font-size: 13px; color: #78350f; margin-left: 6px;">
+                        {{ extracted.get('missing_fields') | join(', ') }}
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- HOSPITAL ACCESS REQUEST -->
+        <div class="meta-card">
+            <h3 style="margin-top: 0; font-size: 16px; color: var(--primary); margin-bottom: 8px;">
+                🏥 Share Report with Hospital for Clinical Review
+            </h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 0; margin-bottom: 16px;">
+                Authorize an affiliated hospital to inspect the original PDF document and issue hospital attestation.
+            </p>
+
+            <form method="post" action="{{ url_for('request_hospital_access') }}" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <input type="hidden" name="analysis_id" value="{{ analysis.analysis_id }}">
+                <select name="hospital_id" required style="padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13.5px; min-width: 280px;">
+                    <option value="">Select a demo hospital...</option>
+                    {% for h in demo_hospitals %}
+                        <option value="{{ h.hospital_id }}">
+                            {{ h.hospital_name }} — {{ h.city }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="ai-prompt-btn" style="padding: 10px 16px;">
+                    Request Access Approval ➜
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TAB 4: AI CLINICAL EXECUTIVE SUMMARY (WITH TYPEWRITER EFFECT) -->
+    <div class="tab-pane" id="tab-ai-summary">
+        <div class="ai-summary-card">
+            <div class="ai-card-header">
+                <div class="ai-title-wrap">
+                    <span class="icon">✨</span>
+                    <div>
+                        <h2 style="margin: 0; font-size: 18px; color: #134e4a;">AI Clinical Executive Summary</h2>
+                        <p style="margin: 2px 0 0; font-size: 13px; color: var(--text-muted);">
+                            Concise 6–10 line clinical overview focusing on chief abnormal parameters, omitting routine normal filler.
+                        </p>
+                    </div>
+                </div>
+                <button id="summarizeReportBtn" class="ai-prompt-btn">
+                    <span>✨</span> Generate AI Summary
+                </button>
+            </div>
+
+            <!-- THINKING ANIMATION -->
+            <div id="summaryThinkingIndicator" class="thinking-indicator">
+                <span>AI Clinical Assistant is reading lab parameters & formulating findings</span>
+                <span class="thinking-dots">
+                    <span></span><span></span><span></span>
+                </span>
+            </div>
+
+            <!-- TYPEWRITER OUTPUT BOX -->
+            <div id="summaryResultContainer" style="display: none; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 11.5px; font-weight: 800; color: #15803d; text-transform: uppercase;">
+                        ✓ Clinical Summary Generated
+                    </span>
+                    <button type="button" id="copySummaryBtn" style="background: transparent; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; color: #475569;">
+                        📋 Copy Text
+                    </button>
+                </div>
+                <div class="typewriter-box" id="summaryTextOutput"></div>
+            </div>
+
+            <div style="margin-top: 14px; font-size: 12px; color: #64748b; line-height: 1.5;">
+                ℹ <em>Informational AI summary provided by Google Gemini 2.5 Flash. Clinical decisions should always be reviewed directly with an authorized medical professional.</em>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKSPACE FOOTER ACTIONS -->
+    <footer class="workspace-footer">
+        <div style="font-size: 12px; color: #64748b;">
+            MediTrust Automated Screening System · Hash-verified audit trail
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('my_analyses') }}" class="btn-secondary">
+                ← Back to History
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary" style="background: var(--primary); color: white; border-color: var(--primary);">
+                Return to Dashboard ➜
+            </a>
+        </div>
+    </footer>
+
+</div>
+
+<script>
+// TAB SWITCHER
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    const targetPane = document.getElementById(tabId);
+    if (targetPane) targetPane.classList.add('active');
+    
+    const targetBtn = document.getElementById('btn-' + tabId);
+    if (targetBtn) targetBtn.classList.add('active');
+}
+
+// SEARCH & FILTER LAB TESTS
+const searchInput = document.getElementById('testSearchInput');
+let currentFilter = 'all';
+
+function filterTests(filterType, btnElement) {
+    currentFilter = filterType;
+    document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    applyFilters();
+}
+
+if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+}
+
+function applyFilters() {
+    const term = (searchInput ? searchInput.value : '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.test-row');
+
+    rows.forEach(row => {
+        const testName = row.dataset.name || '';
+        const flag = row.dataset.flag || 'normal';
+        const matchesSearch = !term || testName.includes(term);
+
+        let matchesFilter = true;
+        if (currentFilter === 'abnormal') {
+            matchesFilter = (flag === 'high' || flag === 'low' || flag === 'abnormal');
+        } else if (currentFilter === 'normal') {
+            matchesFilter = (flag === 'normal');
+        }
+
+        if (matchesSearch && matchesFilter) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// TYPEWRITER STREAMING ENGINE
+function typeWriterEffect(element, fullText, speed = 16, onComplete = null) {
+    element.innerHTML = "";
+    const cursor = document.createElement("span");
+    cursor.className = "typing-cursor";
+    cursor.textContent = "▌";
+    element.appendChild(cursor);
+
+    const words = fullText.split(" ");
+    let i = 0;
+
+    function step() {
+        if (i < words.length) {
+            const span = document.createTextNode((i > 0 ? " " : "") + words[i]);
+            element.insertBefore(span, cursor);
+            i++;
+
+            const lastWord = words[i - 1];
+            const pause = (lastWord.includes(".") || lastWord.includes("\n") || lastWord.includes("!") || lastWord.includes("?")) ? 70 : speed;
+            setTimeout(step, pause);
+        } else {
+            cursor.remove();
+            if (onComplete) onComplete();
+        }
+    }
+    step();
+}
+
+// AI SUMMARIZE ACTION WITH TYPEWRITER EFFECT
+document.addEventListener("DOMContentLoaded", function () {
+    const summarizeBtn = document.getElementById("summarizeReportBtn");
+    const thinkingIndicator = document.getElementById("summaryThinkingIndicator");
+    const resultContainer = document.getElementById("summaryResultContainer");
+    const textOutput = document.getElementById("summaryTextOutput");
+    const copyBtn = document.getElementById("copySummaryBtn");
+
+    let currentSummaryText = "";
+
+    if (summarizeBtn) {
+        summarizeBtn.addEventListener("click", function () {
+            summarizeBtn.disabled = true;
+            thinkingIndicator.style.display = "block";
+            resultContainer.style.display = "none";
+
+            fetch("{{ url_for('api_summarize_analysis') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    analysis_id: {{ analysis.analysis_id }}
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                thinkingIndicator.style.display = "none";
+                summarizeBtn.disabled = false;
+
+                if (data.success && data.summary) {
+                    currentSummaryText = data.summary;
+                    resultContainer.style.display = "block";
+                    summarizeBtn.innerHTML = "<span>🔄</span> Re-Summarize";
+                    
+                    // Trigger typewriter streaming
+                    typeWriterEffect(textOutput, data.summary, 16);
+                } else {
+                    alert("Could not generate summary: " + (data.error || "Unknown error"));
+                }
+            })
+            .catch(err => {
+                thinkingIndicator.style.display = "none";
+                summarizeBtn.disabled = false;
+                alert("Network error while generating AI summary.");
+            });
+        });
+    }
+
+    if (copyBtn) {
+        copyBtn.addEventListener("click", function () {
+            if (!currentSummaryText) return;
+            navigator.clipboard.writeText(currentSummaryText).then(() => {
+                copyBtn.textContent = "✓ Copied!";
+                setTimeout(() => { copyBtn.textContent = "📋 Copy Text"; }, 2000);
+            });
+        });
+    }
+});
+</script>
+
+</body>
+</html>

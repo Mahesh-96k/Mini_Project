@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hospital Login | MediTrust</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-layout">
+        <section class="auth-brand">
+            <div class="brand">
+                <span class="brand-mark">M</span>
+                MediTrust
+            </div>
+
+            <div class="brand-content">
+                <span class="eyebrow">HOSPITAL WORKSPACE</span>
+                <h1>Trusted records.<br>Responsible care.</h1>
+                <p>
+                    Access your hospital workspace to manage
+                    medical documents and review verification results.
+                </p>
+            </div>
+
+            <div class="brand-footer">
+                MediTrust · Hospital Portal
+            </div>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-form-wrap">
+                <div class="brand mobile-brand">
+                    <span class="brand-mark">M</span>
+                    MediTrust
+                </div>
+
+                <span class="eyebrow">HOSPITAL STAFF</span>
+                <h2>Welcome back</h2>
+                <p class="muted">
+                    Sign in using your registered hospital account.
+                </p>
+
+                {% for message in get_flashed_messages() %}
+                    <p class="alert">{{ message }}</p>
+                {% endfor %}
+
+                <form method="POST"
+                      action="{{ url_for('hospital_login') }}">
+
+                    <div class="form-group">
+                        <label for="hospital">Registered hospital</label>
+                        <select id="hospital" name="hospital_id"
+                                required>
+                            <option value="">Choose a hospital</option>
+                            {% for hospital in hospitals %}
+                            <option value="{{ hospital.hospital_id }}">
+                                {{ hospital.hospital_name }}
+                                ({{ hospital.hospital_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Staff username</label>
+                        <input id="username" name="username"
+                               maxlength="100"
+                               autocomplete="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input id="password" name="password"
+                               type="password"
+                               autocomplete="current-password"
+                               required>
+                    </div>
+
+                    <button class="button button-primary button-full"
+                            type="submit">
+                        Sign in to hospital
+                    </button>
+                </form>
+
+                <p class="legal-note">
+                    Demo hospital accounts only. Hospital selection
+                    does not grant access without valid credentials.
+                </p>
+
+                <p class="muted">
+                    <a href="{{ url_for('home') }}">
+                        Back to portal selection
+                    </a>
+                </p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

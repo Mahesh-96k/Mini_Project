@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Two-Step Verification | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-layout">
+        <section class="auth-brand">
+            <div class="brand">
+                <div class="brand-mark">M</div>
+                <span>MediTrust</span>
+            </div>
+
+            <div class="brand-content">
+                <span class="eyebrow">PATIENT DATA PROTECTION</span>
+                <h1>Enhanced Security.<br>Two-Step Verification.</h1>
+                <p>
+                    MediTrust protects confidential medical data by verifying 
+                    each sign-in using an encrypted, time-sensitive security code 
+                    sent directly to your registered email.
+                </p>
+            </div>
+
+            <p class="brand-footer">MediTrust · Two-Factor Authentication</p>
+        </section>
+
+        <section class="auth-panel">
+            <div class="mobile-brand brand">
+                <div class="brand-mark">M</div>
+                <span>MediTrust</span>
+            </div>
+
+            <div class="auth-form-wrap">
+                <span class="eyebrow">STEP 2 OF 2</span>
+                <h2>Enter Security Code</h2>
+                
+                {% if email %}
+                    <p class="muted">
+                        We sent a 6-digit verification code to<br>
+                        <strong style="color: #087E75;">{{ email }}</strong>
+                    </p>
+                {% else %}
+                    <p class="muted">
+                        Please register your email address to receive your 6-digit security code.
+                    </p>
+                {% endif %}
+
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="alert" role="alert" style="margin-bottom: 16px;">
+                            {% for message in messages %}
+                                <p>{{ message }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% if need_email %}
+                    <!-- FIRST-TIME EMAIL SETUP FORM -->
+                    <form method="post" action="{{ url_for('verify_otp') }}">
+                        <input type="hidden" name="action" value="set_email">
+                        
+                        <div class="form-group">
+                            <label for="email">Enter Your Email Address</label>
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                placeholder="name@example.com"
+                                required
+                                autofocus
+                            >
+                        </div>
+
+                        <button class="button button-primary button-full" type="submit">
+                            Send Verification Code <span aria-hidden="true">→</span>
+                        </button>
+                    </form>
+                {% else %}
+                    <!-- OTP VERIFICATION FORM -->
+                    <form method="post" action="{{ url_for('verify_otp') }}" style="margin-bottom: 20px;">
+                        <input type="hidden" name="action" value="verify">
+
+                        <div class="form-group">
+                            <label for="otp_code">6-Digit Code</label>
+                            <input
+                                id="otp_code"
+                                name="otp_code"
+                                type="text"
+                                inputmode="numeric"
+                                pattern="[0-9]{6}"
+                                maxlength="6"
+                                placeholder="123456"
+                                required
+                                autofocus
+                                autocomplete="one-time-code"
+                                style="font-size: 24px; letter-spacing: 8px; text-align: center; font-weight: 700; color: #087E75;"
+                            >
+                        </div>
+
+                        <button class="button button-primary button-full" type="submit">
+                            Verify & Continue <span aria-hidden="true">→</span>
+                        </button>
+                    </form>
+
+                    <!-- RESEND CODE FORM -->
+                    <form method="post" action="{{ url_for('verify_otp') }}" style="text-align: center;">
+                        <input type="hidden" name="action" value="resend">
+                        <span style="font-size: 13px; color: #64748b;">Didn't receive the code? </span>
+                        <button type="submit" style="background: none; border: none; color: #087E75; font-weight: 600; cursor: pointer; text-decoration: underline; font-size: 13px;">
+                            Resend Code
+                        </button>
+                    </form>
+                {% endif %}
+
+                <div style="margin-top: 24px; text-align: center;">
+                    <a href="{{ url_for('login') }}" style="font-size: 12px; color: #64748b; text-decoration: none;">
+                        ← Back to Sign In
+                    </a>
+                </div>
+
+                <div class="security-note" style="margin-top: 24px;">
+                    <span class="security-icon">🔒</span>
+                    <p>Security codes expire in 5 minutes for your privacy and protection.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

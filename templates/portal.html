@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Portal | MediTrust</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .portal-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .portal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 6%;
+            background: #fff;
+            border-bottom: 1px solid #e5ecef;
+        }
+
+        .portal-tag {
+            color: #72818e;
+            font-size: 12px;
+        }
+
+        .portal-content {
+            width: min(900px, 100%);
+            margin: auto;
+            padding: 55px 24px;
+        }
+
+        .portal-intro {
+            margin-bottom: 35px;
+            text-align: center;
+        }
+
+        .portal-intro h1 {
+            margin: 12px 0;
+            color: #142b3b;
+            font-size: clamp(30px, 5vw, 42px);
+            letter-spacing: -1px;
+        }
+
+        .portal-intro p {
+            color: #72818e;
+            font-size: 14px;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .portal-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 28px;
+            color: #253746;
+            background: #fff;
+            border: 1px solid #e2e9ed;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px #142b3b08;
+        }
+
+        .portal-card:hover {
+            border-color: #a8d7d0;
+            box-shadow: 0 14px 34px #142b3b10;
+        }
+
+        .portal-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            font-size: 25px;
+            font-weight: 800;
+        }
+
+        .patient-icon {
+            color: #087f78;
+            background: #e8f5f2;
+        }
+
+        .hospital-icon {
+            color: #355d9a;
+            background: #edf3ff;
+        }
+
+        .portal-card h2 {
+            margin: 0 0 8px;
+            color: #203746;
+            font-size: 21px;
+        }
+
+        .portal-card p {
+            flex: 1;
+            margin: 0 0 24px;
+            color: #72818e;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .portal-button {
+            width: 100%;
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            color: #fff;
+            background: #087f78;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 750;
+        }
+
+        .portal-button:hover {
+            background: #066a65;
+        }
+
+        .hospital-button {
+            background: #355d9a;
+        }
+
+        .hospital-button:hover {
+            background: #294a7c;
+        }
+
+        .portal-footer {
+            padding: 20px;
+            color: #95a1a9;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        @media (max-width: 620px) {
+            .portal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .portal-content {
+                padding: 35px 18px;
+            }
+
+            .portal-card {
+                padding: 23px;
+            }
+        }
+    </style>
+</head>
+<body class="portal-page">
+
+    <header class="portal-header">
+        <a class="sidebar-brand" href="{{ url_for('home') }}">
+            <span class="brand-mark">M</span>
+            <span>MediTrust<small> MEDICAL VERIFICATION</small></span>
+        </a>
+        <span class="portal-tag">Secure portal access</span>
+    </header>
+
+    <main class="portal-content">
+        <section class="portal-intro">
+            <span class="eyebrow">WELCOME TO MEDITRUST</span>
+            <h1>How would you like to continue?</h1>
+            <p>Select the portal that matches your account.</p>
+        </section>
+
+        <section class="portal-grid">
+
+            <article class="portal-card">
+                <div class="portal-icon patient-icon">♙</div>
+                <h2>Patient Portal</h2>
+                <p>
+                    Access your patient account, view your registered
+                    identity, and manage medical document requests.
+                </p>
+                <a class="portal-button" href="{{ url_for('login') }}">
+                    Continue as Patient <span aria-hidden="true">→</span>
+                </a>
+            </article>
+
+            <article class="portal-card">
+                <div class="portal-icon hospital-icon">+</div>
+                <h2>Hospital Portal</h2>
+                <p>
+                    For authorized hospital staff to manage patient
+                    registrations, medical reports, and document requests.
+                </p>
+                <a class="portal-button hospital-button"
+                   href="{{ url_for('hospital_login') }}">
+                    Continue as Hospital <span aria-hidden="true">→</span>
+                </a>
+            </article>
+
+        </section>
+    </main>
+
+    <footer class="portal-footer">
+        MediTrust · Development version · Demo hospital entries are not approved partners.
+    </footer>
+
+</body>
+</html>

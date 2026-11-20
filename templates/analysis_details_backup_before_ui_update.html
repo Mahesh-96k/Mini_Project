@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Details | MediTrust</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243247;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: auto;
+        }
+
+        .card {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+            overflow-wrap: anywhere;
+        }
+
+        h1, h2 { margin-top: 0; }
+
+        .muted { color: #64748b; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+        }
+
+        .label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .value { font-weight: bold; }
+
+        .button {
+            display: inline-block;
+            background: #2457d6;
+            color: white;
+            padding: 11px 16px;
+            text-decoration: none;
+            border-radius: 7px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .finding {
+            background: #f4f7fb;
+            padding: 12px;
+            border-radius: 7px;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .notice {
+            background: #fff7e6;
+            padding: 14px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+<main class="container">
+
+    <section class="card">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="notice" role="status">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+
+        <h1>Analysis Details</h1>
+        <p class="muted">
+            Review the saved screening result for this document.
+        </p>
+
+        <a class="button" href="{{ url_for('my_analyses') }}">
+            Back to Analysis History
+        </a>
+
+
+        </section>
+
+        <section class="card">
+            <h2>Request Hospital Review</h2>
+            <p class="muted">
+                Select a demo hospital to request access to this specific document.
+                Your request will remain pending until the hospital-side review
+                workflow is implemented.
+            </p>
+
+            <form method="post" action="{{ url_for('request_hospital_access') }}">
+                <input type="hidden"
+                    name="analysis_id"
+                    value="{{ analysis.analysis_id }}">
+
+                <label for="hospital_id">Select Hospital</label>
+                <select id="hospital_id" name="hospital_id" required>
+                    <option value="">Choose a demo hospital</option>
+                    {% for hospital in demo_hospitals %}
+                        <option value="{{ hospital.hospital_id }}">
+                            {{ hospital.hospital_name }} — {{ hospital.city }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <button class="button" type="submit">
+                    Submit Access Request
+                </button>
+            </form>
+        </section>
+
+        <section class="card">
+
+
+        <a class="button" href="{{ url_for('dashboard') }}">
+            Dashboard
+        </a>
+    </section>
+
+    <section class="card">
+        <h2>Analysis Summary</h2>
+
+        <div class="grid">
+            <div>
+                <div class="label">Analysis ID</div>
+                <div class="value">{{ analysis.analysis_id }}</div>
+            </div>
+
+            <div>
+                <div class="label">MediTrust Reference</div>
+                <div class="value">
+                    {{ analysis.internal_reference or "Not available" }}
+                </div>
+            </div>
+
+            <div>
+                <div class="label">Date Submitted</div>
+                <div class="value">
+                    {{ analysis.created_at.strftime('%d-%m-%Y %H:%M')
+                       if analysis.created_at else "Not available" }}
+                </div>
+            </div>
+
+            <div>
+                <div class="label">Risk Score</div>
+                <div class="value">{{ analysis.risk_score }}/100</div>
+            </div>
+
+            <div>
+                <div class="label">Risk Level</div>
+                <div class="value">{{ analysis.risk_level }}</div>
+            </div>
+
+            <div>
+                <div class="label">Review Status</div>
+                <div class="value">{{ analysis.review_status }}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Extracted Medical Information</h2>
+
+        {% if analysis.extracted_data %}
+            {% set extracted = analysis.extracted_data %}
+
+            {% if extracted is string %}
+                <pre>{{ extracted }}</pre>
+            {% elif extracted is mapping %}
+                <div class="grid">
+                    {% for key, value in extracted.items() %}
+                        <div>
+                            <div class="label">
+                                {{ key.replace('_', ' ') | title }}
+                            </div>
+                            <div class="value">
+                                {% if value is none or value == '' %}
+                                    Not available
+                                {% elif value is string or value is number or value is boolean %}
+                                    {{ value }}
+                                {% else %}
+                                    {{ value | tojson }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <pre>{{ extracted | tojson(indent=2) }}</pre>
+            {% endif %}
+        {% else %}
+            <p class="muted">No extracted information is available.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Screening Findings</h2>
+
+        {% if analysis.findings %}
+            {% set findings = analysis.findings %}
+
+            {% if findings is string %}
+                <div class="finding">{{ findings }}</div>
+            {% elif findings is sequence and findings is not mapping %}
+                {% for finding in findings %}
+                    <div class="finding">
+                        {% if finding is mapping %}
+                            {{ finding | tojson }}
+                        {% else %}
+                            {{ finding }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <pre>{{ findings | tojson(indent=2) }}</pre>
+            {% endif %}
+        {% else %}
+            <p class="muted">No findings were saved for this analysis.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h2>Important Information</h2>
+        <p class="notice">
+            MediTrust provides automated screening to identify information
+            that may need further review. A risk score is not proof of fraud,
+            and a low score is not proof that a document is genuine.
+            Clinical or authenticity decisions require appropriate
+            professional verification.
+        </p>
+    </section>
+
+</main>
+</body>
+</html>
